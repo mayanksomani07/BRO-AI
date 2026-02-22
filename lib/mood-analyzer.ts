@@ -121,22 +121,39 @@ export function shouldShowMotivation(
 }
 
 export const MOTIVATIONAL_MESSAGES = [
-  { title: "You Are Not Alone", message: "Whatever you're going through, remember that millions of people share similar feelings. You matter, and your feelings are valid." },
-  { title: "This Too Shall Pass", message: "Tough times don't last, but tough people do. Every storm runs out of rain eventually." },
-  { title: "You Are Stronger Than You Think", message: "Look how far you've come. Every challenge you've faced has made you more resilient." },
-  { title: "One Step at a Time", message: "You don't have to solve everything today. Just take the next small step. Progress is progress, no matter how small." },
-  { title: "Be Kind to Yourself", message: "You deserve the same compassion you give to others. It's okay to rest. It's okay to not be okay." },
-  { title: "Your Feelings Are Valid", message: "It takes courage to acknowledge how you feel. That awareness is the first step toward feeling better." },
-  { title: "Tomorrow Is a New Day", message: "Every sunrise brings a fresh start. Tonight, rest easy knowing that a new beginning is just hours away." },
-  { title: "You Make a Difference", message: "Your presence in this world matters more than you know. Someone out there is grateful for you." },
-  { title: "Breathe", message: "Take a deep breath in... and slowly let it out. In this moment, you are safe. In this moment, you are enough." },
-  { title: "Small Joys Matter", message: "A warm cup of tea, a kind word, a moment of sunshine. These small things add up to something beautiful." },
-  { title: "You Are Enough", message: "You don't need to prove your worth to anyone. You are worthy of love and happiness just as you are." },
-  { title: "Keep Going", message: "The fact that you're here, reading this, shows incredible strength. Never underestimate your own resilience." },
+  { title: "Bhai, tu akela nahi hai", message: "Jo bhi chal raha hai, yaad rakh ki crores log aise hi feel karte hain. Tu matter karta hai, teri feelings valid hain." },
+  { title: "Ye waqt bhi guzar jaayega", message: "Mushkil waqt hamesha nahi rehta, lekin strong log hamesha rehte hain. Har toofan ke baad dhoop aati hai." },
+  { title: "Tu sochta hai se zyada strong hai", message: "Dekh kitna door aaya hai tu. Har challenge ne tujhe aur mazboot banaya hai." },
+  { title: "Ek kadam ek waqt", message: "Sab kuch aaj solve karna zaroori nahi. Bas agla chhota step le. Progress progress hoti hai, chahe kitni bhi chhoti ho." },
+  { title: "Apne aap se pyaar kar", message: "Tu bhi utni hi kindness deserve karta hai jitni doosron ko deta hai. Rest karna okay hai. Not okay hona bhi okay hai." },
+  { title: "Teri feelings valid hain", message: "Apne feelings acknowledge karne mein himmat lagti hai. Ye awareness pehla step hai better feel karne ka." },
+  { title: "Kal naya din hai", message: "Har subah ek fresh start laati hai. Aaj raat chaiyn se so, kal nayi shuruaat hogi." },
+  { title: "Tu fark dalta hai", message: "Is duniya mein teri presence teri soch se zyada matter karti hai. Koi tere liye grateful hai." },
+  { title: "Saans le", message: "Gehri saans le andar... aur dheere se bahar chhod. Is pal mein tu safe hai. Is pal mein tu kaafi hai." },
+  { title: "Chhoti khushiyan matter karti hain", message: "Ek garam chai, ek achha word, ek pal dhoop ka. Ye chhoti cheezein milke kuch khoobsurat banti hain." },
+  { title: "Tu kaafi hai", message: "Tujhe kisi ko apni worth prove nahi karni. Tu pyaar aur khushi ka haqdar hai, jaisa bhi hai." },
+  { title: "Chalte reh", message: "Ye fact ki tu yahan hai, ye padh raha hai — ye incredible strength dikhata hai. Apni resilience ko underestimate mat kar." },
 ];
 
 export function getRandomMotivation() {
   return MOTIVATIONAL_MESSAGES[Math.floor(Math.random() * MOTIVATIONAL_MESSAGES.length)];
+}
+
+export function getMoodScore(mood: MoodType): number {
+  const scores: Record<MoodType, number> = {
+    happy: 5, calm: 4, neutral: 3, stressed: 2, anxious: 1, sad: 0,
+  };
+  return scores[mood];
+}
+
+export function getTimeOfDayContext(): 'earlyMorning' | 'morning' | 'afternoon' | 'evening' | 'lateNight' {
+  const hour = new Date().getHours();
+  if (hour >= 0 && hour < 5) return 'lateNight';
+  if (hour >= 5 && hour < 8) return 'earlyMorning';
+  if (hour >= 8 && hour < 12) return 'morning';
+  if (hour >= 12 && hour < 17) return 'afternoon';
+  if (hour >= 17 && hour < 21) return 'evening';
+  return 'lateNight';
 }
 
 export const MOOD_CONFIG: Record<MoodType, { label: string; icon: string; color: string }> = {

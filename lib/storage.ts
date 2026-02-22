@@ -42,6 +42,13 @@ export async function setLastMotivationTime(): Promise<void> {
   await AsyncStorage.setItem(MOTIVATION_SHOWN_KEY, Date.now().toString());
 }
 
+export async function getCheckinCountToday(): Promise<number> {
+  const moods = await getMoodEntries();
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  return moods.filter(m => m.timestamp >= today.getTime()).length;
+}
+
 export async function getMoodStats(days: number = 7): Promise<{
   moodCounts: Record<string, number>;
   averageSentiment: number;

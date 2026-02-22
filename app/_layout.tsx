@@ -8,13 +8,22 @@ import { useFonts, Inter_400Regular, Inter_500Medium, Inter_600SemiBold, Inter_7
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { queryClient } from "@/lib/query-client";
 import { MoodProvider } from "@/lib/mood-context";
+import { LanguageProvider, useLanguage } from "@/lib/language-context";
 
 SplashScreen.preventAutoHideAsync();
 
 function RootLayoutNav() {
+  const { hasOnboarded, isLoading } = useLanguage();
+
+  if (isLoading) return null;
+
   return (
     <Stack screenOptions={{ headerBackTitle: "Back" }}>
-      <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+      {!hasOnboarded ? (
+        <Stack.Screen name="onboarding" options={{ headerShown: false }} />
+      ) : (
+        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+      )}
     </Stack>
   );
 }
@@ -38,13 +47,15 @@ export default function RootLayout() {
   return (
     <ErrorBoundary>
       <QueryClientProvider client={queryClient}>
-        <MoodProvider>
-          <GestureHandlerRootView>
-            <KeyboardProvider>
-              <RootLayoutNav />
-            </KeyboardProvider>
-          </GestureHandlerRootView>
-        </MoodProvider>
+        <LanguageProvider>
+          <MoodProvider>
+            <GestureHandlerRootView>
+              <KeyboardProvider>
+                <RootLayoutNav />
+              </KeyboardProvider>
+            </GestureHandlerRootView>
+          </MoodProvider>
+        </LanguageProvider>
       </QueryClientProvider>
     </ErrorBoundary>
   );

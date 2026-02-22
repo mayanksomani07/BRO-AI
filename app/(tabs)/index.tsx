@@ -6,6 +6,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, { useSharedValue, useAnimatedStyle, withSpring, FadeIn } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
 import { useMood } from '@/lib/mood-context';
+import { useLanguage } from '@/lib/language-context';
 import { MOOD_CONFIG, type MoodType } from '@/lib/mood-analyzer';
 import { MoodTrendChart } from '@/components/MoodTrendChart';
 import { MotivationModal } from '@/components/MotivationModal';
@@ -36,6 +37,7 @@ function RecentMoodPill({ mood }: { mood: MoodType }) {
 export default function DashboardScreen() {
   const insets = useSafeAreaInsets();
   const { moods, journals, stats, motivation, showMotivation, dismissMotivation } = useMood();
+  const { language } = useLanguage();
   const webTopInset = Platform.OS === 'web' ? 67 : 0;
 
   const latestMood = moods.length > 0 ? moods[0] : null;
@@ -45,6 +47,11 @@ export default function DashboardScreen() {
 
   const getGreeting = () => {
     const hour = new Date().getHours();
+    if (language === 'hinglish' || language === 'hindi') {
+      if (hour < 12) return 'Good morning bhai!';
+      if (hour < 17) return 'Good afternoon yaar!';
+      return 'Good evening bhai!';
+    }
     if (hour < 12) return 'Good morning';
     if (hour < 17) return 'Good afternoon';
     return 'Good evening';

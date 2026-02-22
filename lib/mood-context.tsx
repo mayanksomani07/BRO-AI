@@ -18,6 +18,7 @@ import {
   getMoodStats,
   getLastMotivationTime,
   setLastMotivationTime,
+  getCheckinCountToday,
 } from './storage';
 
 interface MotivationMessage {
@@ -82,7 +83,18 @@ export function MoodProvider({ children }: { children: ReactNode }) {
       const lastShown = await getLastMotivationTime();
       const hoursSinceShown = (Date.now() - lastShown) / (1000 * 60 * 60);
       if (hoursSinceShown >= 1) {
-        setMotivation(getRandomMotivation());
+        const { getContextualMessage } = await import('./hinglish-messages');
+        const latestMood = currentMoods.length > 0 ? currentMoods[0].mood : 'neutral';
+        const checkinCount = await getCheckinCountToday();
+        const hour = new Date().getHours();
+        try {
+          const AsyncStorage = (await import('@react-native-async-storage/async-storage')).default;
+          const lang = await AsyncStorage.getItem('@moodguard_language') || 'hinglish';
+          const contextMsg = getContextualMessage(latestMood, lang as any, hour, checkinCount);
+          setMotivation(contextMsg);
+        } catch {
+          setMotivation(getRandomMotivation());
+        }
         setShowMotivation(true);
         await setLastMotivationTime();
       }

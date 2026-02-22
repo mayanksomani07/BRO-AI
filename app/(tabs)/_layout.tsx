@@ -4,7 +4,6 @@ import { NativeTabs, Icon, Label } from "expo-router/unstable-native-tabs";
 import { BlurView } from "expo-blur";
 import { Ionicons } from "@expo/vector-icons";
 import { Platform, StyleSheet, useColorScheme, View } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
 import React from "react";
 
 import colors from "@/constants/colors";
@@ -14,7 +13,7 @@ function NativeTabLayout() {
     <NativeTabs>
       <NativeTabs.Trigger name="index">
         <Icon sf={{ default: "heart.text.clipboard", selected: "heart.text.clipboard.fill" }} />
-        <Label>Dashboard</Label>
+        <Label>Home</Label>
       </NativeTabs.Trigger>
       <NativeTabs.Trigger name="checkin">
         <Icon sf={{ default: "face.smiling", selected: "face.smiling.fill" }} />
@@ -24,9 +23,13 @@ function NativeTabLayout() {
         <Icon sf={{ default: "book", selected: "book.fill" }} />
         <Label>Journal</Label>
       </NativeTabs.Trigger>
-      <NativeTabs.Trigger name="affirmations">
-        <Icon sf={{ default: "sparkles", selected: "sparkles" }} />
-        <Label>Uplift</Label>
+      <NativeTabs.Trigger name="broai">
+        <Icon sf={{ default: "bubble.left.and.bubble.right", selected: "bubble.left.and.bubble.right.fill" }} />
+        <Label>BroAI</Label>
+      </NativeTabs.Trigger>
+      <NativeTabs.Trigger name="explore">
+        <Icon sf={{ default: "square.grid.2x2", selected: "square.grid.2x2.fill" }} />
+        <Label>Explore</Label>
       </NativeTabs.Trigger>
     </NativeTabs>
   );
@@ -71,7 +74,7 @@ function ClassicTabLayout() {
       <Tabs.Screen
         name="index"
         options={{
-          title: "Dashboard",
+          title: "Home",
           tabBarIcon: ({ color, focused }) => (
             <Ionicons name={focused ? "heart-circle" : "heart-circle-outline"} size={24} color={color} />
           ),
@@ -96,12 +99,27 @@ function ClassicTabLayout() {
         }}
       />
       <Tabs.Screen
+        name="broai"
+        options={{
+          title: "BroAI",
+          tabBarIcon: ({ color, focused }) => (
+            <Ionicons name={focused ? "chatbubbles" : "chatbubbles-outline"} size={24} color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="explore"
+        options={{
+          title: "Explore",
+          tabBarIcon: ({ color, focused }) => (
+            <Ionicons name={focused ? "grid" : "grid-outline"} size={24} color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
         name="affirmations"
         options={{
-          title: "Uplift",
-          tabBarIcon: ({ color, focused }) => (
-            <Ionicons name={focused ? "sparkles" : "sparkles-outline"} size={24} color={color} />
-          ),
+          href: null,
         }}
       />
     </Tabs>
