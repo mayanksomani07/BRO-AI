@@ -1,0 +1,37 @@
+how just from the mobile device a person is using, can we get to know the feeling of a person, how is is feeling
+Tracking their activity, behaviour on using mobile device, like whether they are searching for some motivational video, seeing how to cope up with content, searching for such terms in their browser, their typing pattern comparison, other things, etc...
+Using Keystroke Dynamics
+when person is depressed, their typing speed slow down, & when anxious press backspace more often
+App Usage Metadata
+for eg- "doomscrolling" sad, breakup related reels in instragram late at night around 3 am is sign of depression
+Search & Intent Sensing in browser
+searching "how to forget someone," "feeling lonely," , "career failure" , etc. related in browser is also sign of depression
+Creating Digital Biomarkers
+ Circadian Rhythm Shift: for eg- earlier he used to sleep at 11 pm, but now online till late night 4 am, seeing this behaviour regularly
+Social Withdrawal Index: whether he has start using lees of whatsapp, deactivate instragram, not receiving calls of others, etc., 
+Typing: Irregularity in typing pattern
+In Apple 'IOS", there is no such feature, which allow an external app to read other app data. Apple consider it as "spyware"
+One feasible & legal way for it, creating a "Custom Keyboard"
+can you help me designing a "Mood Algorithm" based on the same, where based on these some of the above parameters, and our AI algorithm is intelligent enough to calculate a "Mood_Score" & decide, whether the person is in depression or not
+Logic Engine: For eg - If (mood_score<3) && (Time == "Late Night") ⮕ Trigger Notification.
+If they are felling sad, gloomy, then send a small Happy Motivation Message notification to them somewhat like - "You are not Alone"
+The Message: Don't send randomly. Use context.
+For eg - If searching for ex: "Bhai, phone rakh aur gehri saans le. Tu isse behtar deserve karta hai. Main hoon na?"
+For eg- If doomscrolling: "Bhai, 3 baj gaye hain. Kal office hai. So ja, subah uthkar career par focus karenge. Good night!"
+and so on
+Can ask for follow ups, like, do you want someone to listen to you, we are there up for you, and then they can talk to a Bro_AI_chatbot
+[Available 14*7; Supporting, Train on Multiple Indian Local Language; Default - Hinglish (Train on Bro Language Code)]
+Train on some Indian Consumer Data, along with global Consumer Data (on different local languages like Hindi, Bengali, Kannada, etc..)
+Ask which language they are comfortable with (It can be 1st select question) and our AI can answer, talk to them in that their local language. 
+Other Features:
+Add a section for Relaxing Music
+Add a section for Everyday some Random shuffle card, giving motivation
+Add a section for Some self-confidence gaining task [small baby step by step like just 5 min daily]
+Daily Task Assign Notification (Once feels like he has heal, then can stop this up)
+Gamify this experience; like can start with initially small 5 min task only
+Add a Emergency Button
+ If feels in Extremely Critical Zone, then can press this button, this will call give free mental health helpline number, who they can contact
+Add a Therapist Connect (If wanted Human Connection)
+Privacy & User's Trust
+Transparency: Ask for User's Permission for using the data, and we should be ensuring to keep their data secure, encrypted. It can be store in their own local mobile storage itself to ensure more trustability
+End-to-End Encryption: Keep Data in encrypted format in server
