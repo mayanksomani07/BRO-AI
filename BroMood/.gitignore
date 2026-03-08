@@ -1,0 +1,38 @@
+# Dependencies
+node_modules/
+.expo/
+
+# Build outputs
+dist/
+build/
+ios/
+android/
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+
+# Environment
+.env
+.env.local
+.env.production
+
+# Logs
+npm-debug.log*
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Xcode
+*.xcworkspace/xcuserdata/
+DerivedData/
+xcuserdata/
+
+# TypeScript
+*.tsbuildinfo
+
+# Expo
+.expo-shared/

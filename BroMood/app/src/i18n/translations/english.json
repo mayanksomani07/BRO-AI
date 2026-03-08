@@ -1,0 +1,31 @@
+{
+  "onboarding": {
+    "language_question": "Which language are you most comfortable in?",
+    "consent_title": "Your data, your privacy",
+    "consent_body": "We only collect data to support you. It will never be sold.",
+    "let_s_go": "Let's go"
+  },
+  "home": {
+    "mood_label": "Today's mood",
+    "greeting_morning": "Good morning, {{name}}! ☀️",
+    "greeting_afternoon": "Hey {{name}}, how's it going? 👋",
+    "greeting_night": "Late night, {{name}}? 🌙",
+    "chat_cta": "Chat with Bro_AI"
+  },
+  "chat": {
+    "vent_mode": "Just Listen",
+    "advice_mode": "Advise Me",
+    "listen_mode": "Understand",
+    "placeholder": "Type anything..."
+  },
+  "journal": {
+    "title": "Journal",
+    "write": "Write",
+    "placeholder": "What's on your mind today? Write freely...",
+    "empty_title": "Your journal is empty"
+  },
+  "emergency": {
+    "title": "You're not alone.",
+    "sub": "These people are here to listen — right now, for free."
+  }
+}

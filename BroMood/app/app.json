@@ -1,0 +1,83 @@
+{
+  "expo": {
+    "name": "BroMood",
+    "slug": "bromood",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "automatic",
+    "scheme": "bromood",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#0A0A1A"
+    },
+    "assetBundlePatterns": ["**/*"],
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.bromood.app",
+      "buildNumber": "1",
+      "deploymentTarget": "16.0",
+      "entitlements": {
+        "com.apple.security.application-groups": ["group.com.bromood.shared"],
+        "com.apple.developer.healthkit": true,
+        "com.apple.developer.healthkit.access": ["health-records"],
+        "com.apple.developer.family-controls": true
+      },
+      "infoPlist": {
+        "NSHealthShareUsageDescription": "To understand your sleep patterns and detect mood changes",
+        "NSHealthUpdateUsageDescription": "To log your wellness data",
+        "NSContactsUsageDescription": "To detect changes in your social communication patterns",
+        "NSUserNotificationsUsageDescription": "To send you timely support when you need it most",
+        "UIBackgroundModes": ["background-fetch", "remote-notification"],
+        "NSHealthClinicalHealthRecordsShareUsageDescription": "To understand your health patterns"
+      },
+      "associatedDomains": ["applinks:bromood.app"],
+      "googleServicesFile": "./GoogleService-Info.plist"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#0A0A1A"
+      },
+      "package": "com.bromood.app"
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      "expo-router",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/notification-icon.png",
+          "color": "#3B82F6",
+          "sounds": ["./assets/sounds/nudge.wav"]
+        }
+      ],
+      [
+        "expo-build-properties",
+        {
+          "ios": {
+            "useFrameworks": "static"
+          }
+        }
+      ],
+      "expo-secure-store",
+      "expo-sqlite",
+      "expo-crypto",
+      [
+        "react-native-health",
+        {
+          "isClinicalDataEnabled": false
+        }
+      ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "bromood-production"
+      }
+    },
+    "owner": "bromood-team"
+  }
+}

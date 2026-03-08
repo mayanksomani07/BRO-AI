@@ -1,0 +1,11 @@
+{
+  "home": {
+    "mood_label": "Mood",
+    "greeting_morning": "Good morning, {{name}}! ☀️",
+    "greeting_afternoon": "Hey {{name}}! 👋",
+    "greeting_night": "{{name}} 🌙",
+    "chat_cta": "Bro_AI"
+  },
+  "chat": { "vent_mode": "Listen", "advice_mode": "Advise", "listen_mode": "Understand", "placeholder": "Type..." },
+  "emergency": { "title": "You are not alone.", "sub": "Help is available now, free." }
+}

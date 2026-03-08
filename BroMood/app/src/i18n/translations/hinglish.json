@@ -1,0 +1,31 @@
+{
+  "onboarding": {
+    "language_question": "Kaun si language mein comfortable hai tu?",
+    "consent_title": "Tera data, teri privacy",
+    "consent_body": "Hum sirf tujhe support karne ke liye kuch data collect karte hain. Ye kabhi becha nahi jayega.",
+    "let_s_go": "Chalo shuru karein"
+  },
+  "home": {
+    "mood_label": "Aaj ka mood",
+    "greeting_morning": "Good morning, {{name}} bhai! ☀️",
+    "greeting_afternoon": "Kya haal hai, {{name}}? 👋",
+    "greeting_night": "Raat ka time hai, {{name}} bhai 🌙",
+    "chat_cta": "Bro_AI se baat kar"
+  },
+  "chat": {
+    "vent_mode": "Bas sun le",
+    "advice_mode": "Kuch suggest kar",
+    "listen_mode": "Sun aur samajh",
+    "placeholder": "Kuch bhi likh..."
+  },
+  "journal": {
+    "title": "Journal",
+    "write": "Likho",
+    "placeholder": "Aaj kya chal raha hai, bhai? Freely likh...",
+    "empty_title": "Journal abhi khali hai"
+  },
+  "emergency": {
+    "title": "Tu akela nahi hai.",
+    "sub": "Ye log abhi sun'ne ke liye available hain — bilkul free."
+  }
+}
