@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import {
-  View, Text, StyleSheet, TouchableOpacity, ScrollView
+  View, Text, StyleSheet, TouchableOpacity, ScrollView, TextInput
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
@@ -20,7 +20,7 @@ export default function BaselineSetupScreen() {
   const [step, setStep] = useState(0);
 
   const handleFinish = async () => {
-    setName(name || 'Bhai');
+    setName(name.trim() || 'Bhai');
     setSocialMediaHabit(socialHabit);
     await completeOnboarding();
   };
@@ -36,21 +36,25 @@ export default function BaselineSetupScreen() {
         ))}
       </View>
 
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
         {step === 0 && (
           <BaselineStep
             emoji="👋"
             title="What should I call you?"
             sub="Just your first name or nickname is fine."
           >
-            <TouchableOpacity
+            {/* Real TextInput so keyboard works */}
+            <TextInput
               style={styles.nameInput}
-              onPress={() => {}}
-            >
-              <Text style={[styles.nameText, !name && styles.namePlaceholder]}>
-                {name || 'Type your name...'}
-              </Text>
-            </TouchableOpacity>
+              value={name}
+              onChangeText={setNameLocal}
+              placeholder="Type your name..."
+              placeholderTextColor={COLORS.textMuted}
+              autoFocus
+              returnKeyType="done"
+              maxLength={20}
+            />
+            <Text style={styles.orText}>— or pick one —</Text>
             <View style={styles.nameSuggestions}>
               {['Bhai', 'Yaar', 'Dost', 'Buddy'].map(n => (
                 <TouchableOpacity
@@ -126,12 +130,9 @@ export default function BaselineSetupScreen() {
           onPress={() => step < 2 ? setStep(s => s + 1) : handleFinish()}
           activeOpacity={0.85}
         >
-          <LinearGradient
-            colors={[COLORS.primary, COLORS.primaryDark]}
-            style={styles.ctaGradient}
-          >
+          <LinearGradient colors={[COLORS.primary, COLORS.primaryDark]} style={styles.ctaGradient}>
             <Text style={styles.ctaText}>
-              {step < 2 ? 'Next →' : 'Let\'s go! 🚀'}
+              {step < 2 ? 'Next →' : "Let's go! 🚀"}
             </Text>
           </LinearGradient>
         </TouchableOpacity>
@@ -166,10 +167,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row', justifyContent: 'center', gap: 8,
     paddingTop: 60, paddingBottom: 10,
   },
-  progressDot: {
-    width: 8, height: 8, borderRadius: 4,
-    backgroundColor: COLORS.border,
-  },
+  progressDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: COLORS.border },
   progressDotActive: { backgroundColor: COLORS.primary },
   content: { paddingHorizontal: 24, paddingTop: 24 },
   emoji: { fontSize: 48, marginBottom: 16 },
@@ -181,10 +179,10 @@ const styles = StyleSheet.create({
     borderWidth: 1.5, borderColor: COLORS.borderFocus,
     borderRadius: RADIUS.xl, padding: 18,
     backgroundColor: COLORS.card,
+    fontSize: 18, color: COLORS.textPrimary, fontWeight: '600',
   },
-  nameText: { fontSize: 18, color: COLORS.textPrimary, fontWeight: '600' },
-  namePlaceholder: { color: COLORS.textMuted },
-  nameSuggestions: { flexDirection: 'row', gap: 8, flexWrap: 'wrap', marginTop: 4 },
+  orText: { textAlign: 'center', color: COLORS.textMuted, fontSize: 12, marginVertical: 8 },
+  nameSuggestions: { flexDirection: 'row', gap: 8, flexWrap: 'wrap' },
   nameChip: {
     paddingHorizontal: 16, paddingVertical: 10,
     borderRadius: RADIUS.full, borderWidth: 1, borderColor: COLORS.border,

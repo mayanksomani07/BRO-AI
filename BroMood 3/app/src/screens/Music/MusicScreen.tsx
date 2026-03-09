@@ -1,328 +1,464 @@
-import React, { useState } from 'react';
-import {
-  View, Text, StyleSheet, ScrollView, TouchableOpacity, Linking
-} from 'react-native';
+/**
+ * MusicScreen — Ambient audio player + Guided breathing
+ * Audio: SomaFM free internet radio (no account needed, legal, free)
+ * Breathing: expo-speech voice guidance + animated circle
+ */
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Animated } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
-import { useNavigation } from '@react-navigation/native';
-import { COLORS, RADIUS, getMoodColor } from '../../constants/theme';
-import { useMoodStore } from '../../store/moodStore';
+import { Audio } from 'expo-av';
+import * as Speech from 'expo-speech';
+import { useTranslation } from 'react-i18next';
 import { useUserStore } from '../../store/userStore';
+import { COLORS, RADIUS } from '../../constants/theme';
 
-const PLAYLISTS = [
-  {
-    id: '1', title: 'Calm & Heal', emoji: '🌊', moodRange: [1, 4],
-    desc: 'Soothing sounds for tough moments', color: '#60A5FA', tracks: 18,
-    spotifyUrl: 'https://open.spotify.com/search/calm%20indian%20instrumental',
-  },
-  {
-    id: '2', title: 'Lo-fi Dost', emoji: '🎵', moodRange: [3, 7],
-    desc: 'Indian lo-fi for late nights', color: '#A78BFA', tracks: 24,
-    spotifyUrl: 'https://open.spotify.com/search/indian%20lofi',
-  },
-  {
-    id: '3', title: 'Mood Lift', emoji: '🌤️', moodRange: [1, 10],
-    desc: 'Upbeat songs to shift your energy', color: '#34D399', tracks: 15,
-    spotifyUrl: 'https://open.spotify.com/search/feel%20good%20bollywood',
-  },
-  {
-    id: '4', title: 'Bollywood Feels', emoji: '🎬', moodRange: [1, 10],
-    desc: 'Classic Bollywood for every emotion', color: '#F59E0B', tracks: 30,
-    spotifyUrl: 'https://open.spotify.com/search/emotional%20bollywood',
-  },
-  {
-    id: '5', title: 'Sleep Well', emoji: '🌙', moodRange: [1, 5],
-    desc: '30-min sleep stories + soft music', color: '#8B5CF6', tracks: 10,
-    spotifyUrl: 'https://open.spotify.com/search/sleep%20meditation%20hindi',
-  },
-  {
-    id: '6', title: 'Workout Bro', emoji: '💪', moodRange: [6, 10],
-    desc: 'High energy to burn it out', color: '#F87171', tracks: 22,
-    spotifyUrl: 'https://open.spotify.com/search/indian%20workout%20playlist',
-  },
-  {
-    id: '7', title: 'Sufi Soul', emoji: '🕊️', moodRange: [1, 10],
-    desc: 'Healing Sufi music for the soul', color: '#FBBF24', tracks: 16,
-    spotifyUrl: 'https://open.spotify.com/search/sufi%20music%20healing',
-  },
-  {
-    id: '8', title: 'Coding Flow', emoji: '💻', moodRange: [5, 10],
-    desc: 'Focus beats for deep work', color: '#6EE7B7', tracks: 20,
-    spotifyUrl: 'https://open.spotify.com/search/coding%20focus%20beats',
-  },
+// ─── Tracks — SomaFM free radio (legal, no-login internet radio) ───────────────
+interface Track {
+  id: string; title: string; subtitle: string;
+  emoji: string; color: string; streamUrl: string; genre: string;
+}
+
+const TRACKS: Track[] = [
+  { id: 'drone',  title: 'Calm & Heal',    subtitle: 'Deep drones for stress relief',    emoji: '🌌', color: '#60A5FA', genre: 'Ambient',   streamUrl: 'https://ice2.somafm.com/dronezone-128-mp3' },
+  { id: 'groove', title: 'Lo-fi Dost',     subtitle: 'Chilled beats for late nights',    emoji: '🎵', color: '#A78BFA', genre: 'Lo-fi',     streamUrl: 'https://ice2.somafm.com/groovesalad-128-mp3' },
+  { id: 'space',  title: 'Space Mind',     subtitle: 'Cosmic ambient for focus & calm',  emoji: '🚀', color: '#34D399', genre: 'Space',     streamUrl: 'https://ice2.somafm.com/spacestation-128-mp3' },
+  { id: 'cliq',   title: 'Coding Flow',    subtitle: 'Electronic beats for deep work',   emoji: '💻', color: '#6EE7B7', genre: 'Electronic',streamUrl: 'https://ice2.somafm.com/cliqhop-128-mp3' },
+  { id: 'folk',   title: 'Sufi Soul',      subtitle: 'Acoustic folk for the weary soul', emoji: '🕊️', color: '#FBBF24', genre: 'Folk',      streamUrl: 'https://ice2.somafm.com/folkfwd-128-mp3' },
+  { id: 'indie',  title: 'Mood Lift',      subtitle: 'Upbeat indie to shift your energy',emoji: '🌤️', color: '#F87171', genre: 'Indie',     streamUrl: 'https://ice2.somafm.com/indiepop-128-mp3' },
+  { id: 'metal',  title: 'Release It',     subtitle: 'Heavy cathartic music for anger',  emoji: '🤘', color: '#FF4757', genre: 'Metal',     streamUrl: 'https://ice2.somafm.com/metal-128-mp3' },
+  { id: 'jazz',   title: 'Late Night Jazz',subtitle: 'Smooth jazz for slow evenings',    emoji: '🎷', color: '#F59E0B', genre: 'Jazz',      streamUrl: 'https://ice2.somafm.com/lush-128-mp3' },
 ];
 
-const BREATHING_EXERCISES = [
-  { id: 'b1', name: 'Box Breathing', desc: '4-4-4-4 pattern. Resets your nervous system.', duration: '4 min', emoji: '📦' },
-  { id: 'b2', name: '4-7-8 Breath', desc: 'Inhale 4, hold 7, exhale 8. Sleep aid.', duration: '5 min', emoji: '😴' },
-  { id: 'b3', name: 'Wim Hof Light', desc: '30 deep breaths + breath hold.', duration: '8 min', emoji: '🌬️' },
+// ─── Breathing exercises ────────────────────────────────────────────────────────
+interface BreathEx {
+  id: string; name: string; desc: string; emoji: string; color: string;
+  inhale: number; hold: number; exhale: number; holdOut: number; rounds: number;
+}
+const BREATH_EX: BreathEx[] = [
+  { id: 'box',   name: 'Box Breathing',  desc: 'Balances nervous system. Used by Navy SEALs.',     emoji: '📦', color: '#60A5FA', inhale: 4, hold: 4, exhale: 4,  holdOut: 4, rounds: 4 },
+  { id: '478',   name: '4-7-8 Breath',   desc: 'Best for anxiety & sleep. Dr. Weil technique.',    emoji: '😴', color: '#A78BFA', inhale: 4, hold: 7, exhale: 8,  holdOut: 0, rounds: 4 },
+  { id: 'belly', name: 'Belly Breathing',desc: 'Activates parasympathetic (calm) nervous system.',  emoji: '🌬️', color: '#34D399', inhale: 5, hold: 2, exhale: 6,  holdOut: 0, rounds: 5 },
 ];
+
+type Phase = 'inhale' | 'hold' | 'exhale' | 'hold_out';
 
 export default function MusicScreen() {
-  const navigation = useNavigation<any>();
-  const { currentSnapshot } = useMoodStore();
   const { language } = useUserStore();
-  const score = currentSnapshot?.score ?? 5;
-  const [activeTab, setActiveTab] = useState<'music' | 'breathe'>('music');
+  const isEng = language === 'english';
 
-  const recommended = PLAYLISTS.filter(
-    p => score >= p.moodRange[0] && score <= p.moodRange[1]
-  );
-  const all = PLAYLISTS;
+  // ── Audio state ───────────────────────────────────────────────────────────────
+  const soundRef = useRef<Audio.Sound | null>(null);
+  const [currentTrack, setCurrentTrack] = useState<Track | null>(null);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [loadingId, setLoadingId] = useState<string | null>(null);
+  const [audioError, setAudioError] = useState<string | null>(null);
 
-  const openPlaylist = (url: string) => Linking.openURL(url);
+  // ── Breathing state ───────────────────────────────────────────────────────────
+  const [activeEx, setActiveEx] = useState<BreathEx | null>(null);
+  const [phase, setPhase] = useState<Phase>('inhale');
+  const [countdown, setCountdown] = useState(0);
+  const [round, setRound] = useState(1);
+  const breathAnim = useRef(new Animated.Value(0.35)).current;
+  const breathAnimRef = useRef<Animated.CompositeAnimation | null>(null);
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const phaseRef = useRef<Phase>('inhale');
+  const countRef = useRef(0);
+  const roundRef = useRef(1);
+  const exRef = useRef<BreathEx | null>(null);
+
+  const PHASE_COLOR: Record<Phase, string> = {
+    inhale: '#60A5FA', hold: '#FBBF24', exhale: '#34D399', hold_out: '#F472B6',
+  };
+
+  useEffect(() => {
+    // Configure audio session once on mount
+    Audio.setAudioModeAsync({
+      allowsRecordingIOS: false,
+      staysActiveInBackground: true,
+      playsInSilentModeIOS: true,
+      shouldDuckAndroid: true,
+    });
+    return () => {
+      soundRef.current?.unloadAsync();
+      if (timerRef.current) clearInterval(timerRef.current);
+      Speech.stop();
+    };
+  }, []);
+
+  // ── Audio controls ─────────────────────────────────────────────────────────────
+  const playTrack = async (track: Track) => {
+    setAudioError(null);
+    setLoadingId(track.id);
+
+    // Stop existing sound
+    if (soundRef.current) {
+      await soundRef.current.stopAsync().catch(() => {});
+      await soundRef.current.unloadAsync().catch(() => {});
+      soundRef.current = null;
+    }
+
+    // Toggle off if same track
+    if (currentTrack?.id === track.id && isPlaying) {
+      setCurrentTrack(null);
+      setIsPlaying(false);
+      setLoadingId(null);
+      return;
+    }
+
+    try {
+      const { sound, status } = await Audio.Sound.createAsync(
+        { uri: track.streamUrl },
+        { shouldPlay: true, isLooping: false, volume: 0.75 },
+        (s) => { if (!s.isLoaded) { setIsPlaying(false); } }
+      );
+      soundRef.current = sound;
+      setCurrentTrack(track);
+      setIsPlaying(true);
+    } catch (err: any) {
+      setAudioError(isEng
+        ? 'Could not load stream. Check your internet connection.'
+        : 'Stream load nahi hui. Internet check karo.');
+      setCurrentTrack(track);
+      setIsPlaying(false);
+    } finally {
+      setLoadingId(null);
+    }
+  };
+
+  const togglePause = async () => {
+    if (!soundRef.current) return;
+    if (isPlaying) {
+      await soundRef.current.pauseAsync();
+      setIsPlaying(false);
+    } else {
+      await soundRef.current.playAsync();
+      setIsPlaying(true);
+    }
+  };
+
+  const stopAudio = async () => {
+    if (soundRef.current) {
+      await soundRef.current.stopAsync().catch(() => {});
+      await soundRef.current.unloadAsync().catch(() => {});
+      soundRef.current = null;
+    }
+    setCurrentTrack(null);
+    setIsPlaying(false);
+    setAudioError(null);
+  };
+
+  // ── Breathing engine ──────────────────────────────────────────────────────────
+  const getDuration = (ex: BreathEx, p: Phase): number => {
+    const map: Record<Phase, number> = { inhale: ex.inhale, hold: ex.hold, exhale: ex.exhale, hold_out: ex.holdOut };
+    return map[p];
+  };
+
+  const getNextPhase = (ex: BreathEx, p: Phase): Phase | null => {
+    if (p === 'inhale') return ex.hold > 0 ? 'hold' : 'exhale';
+    if (p === 'hold') return 'exhale';
+    if (p === 'exhale') return ex.holdOut > 0 ? 'hold_out' : null; // null = next round or done
+    return null;
+  };
+
+  const speakPhase = (p: Phase, lang: string) => {
+    Speech.stop();
+    const labels: Record<Phase, { hi: string; en: string }> = {
+      inhale:   { hi: 'Saans lo',    en: 'Breathe in' },
+      hold:     { hi: 'Roko',        en: 'Hold' },
+      exhale:   { hi: 'Saans chodo', en: 'Breathe out' },
+      hold_out: { hi: 'Roko',        en: 'Hold out' },
+    };
+    const text = lang === 'english' ? labels[p].en : labels[p].hi;
+    Speech.speak(text, { language: 'en-US', rate: 0.85, pitch: 0.9 });
+  };
+
+  const animateCircle = (p: Phase, durationSec: number) => {
+    breathAnimRef.current?.stop();
+    const toValue =
+      p === 'inhale'
+        ? 1
+        : p === 'exhale'
+          ? 0.35
+          : p === 'hold'
+            ? 1
+            : 0.35; // hold_out
+
+    breathAnimRef.current = Animated.timing(breathAnim, {
+      toValue,
+      duration: durationSec * 1000,
+      useNativeDriver: false,
+    });
+    breathAnimRef.current.start();
+  };
+
+  const startPhase = (ex: BreathEx, p: Phase, r: number) => {
+    const dur = getDuration(ex, p);
+    if (dur === 0) {
+      // Skip phases with 0 duration
+      const next = getNextPhase(ex, p);
+      if (next) { startPhase(ex, next, r); }
+      else { advanceRound(ex, r); }
+      return;
+    }
+
+    phaseRef.current = p;
+    countRef.current = dur;
+    roundRef.current = r;
+    setPhase(p);
+    setCountdown(dur);
+    setRound(r);
+    speakPhase(p, language);
+    animateCircle(p, dur);
+
+    if (timerRef.current) clearInterval(timerRef.current);
+    timerRef.current = setInterval(() => {
+      countRef.current -= 1;
+      setCountdown(countRef.current);
+      if (countRef.current <= 0) {
+        clearInterval(timerRef.current!);
+        const next = getNextPhase(ex, phaseRef.current);
+        if (next) {
+          startPhase(ex, next, roundRef.current);
+        } else {
+          advanceRound(ex, roundRef.current);
+        }
+      }
+    }, 1000);
+  };
+
+  const advanceRound = (ex: BreathEx, r: number) => {
+    if (r >= ex.rounds) {
+      // Done!
+      Speech.speak(language === 'english' ? 'Great job. Session complete.' : 'Bahut achha. Ho gaya.', { rate: 0.85 });
+      setTimeout(() => {
+        setActiveEx(null);
+        Animated.timing(breathAnim, { toValue: 0.35, duration: 600, useNativeDriver: false }).start();
+      }, 1500);
+      return;
+    }
+    // Short pause between rounds
+    setTimeout(() => startPhase(ex, 'inhale', r + 1), 800);
+  };
+
+  const startBreathing = (ex: BreathEx) => {
+    exRef.current = ex;
+    setActiveEx(ex);
+    startPhase(ex, 'inhale', 1);
+  };
+
+  const stopBreathing = () => {
+    if (timerRef.current) clearInterval(timerRef.current);
+    breathAnimRef.current?.stop();
+    Speech.stop();
+    setActiveEx(null);
+    Animated.timing(breathAnim, { toValue: 0.35, duration: 500, useNativeDriver: false }).start();
+  };
+
+  const phaseColor = PHASE_COLOR[phase];
 
   return (
-    <View style={styles.root}>
-      <LinearGradient colors={['#080B14', '#0A0F20']} style={StyleSheet.absoluteFillObject} />
-      <SafeAreaView style={styles.safeArea} edges={['top']}>
-        {/* Header */}
-        <View style={styles.header}>
-          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
-            <Ionicons name="chevron-back" size={24} color={COLORS.textPrimary} />
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>
-            {language === 'english' ? 'Music & Breathe' : 'Music & Breathe'}
-          </Text>
-          <View style={{ width: 40 }} />
-        </View>
+    <View style={s.root}>
+      <LinearGradient colors={[COLORS.background, '#0A0E1F']} style={StyleSheet.absoluteFillObject} />
+      <SafeAreaView style={s.safe} edges={['top']}>
+        <ScrollView contentContainerStyle={s.content} showsVerticalScrollIndicator={false}>
 
-        {/* Tab Selector */}
-        <View style={styles.tabs}>
-          <TouchableOpacity
-            style={[styles.tab, activeTab === 'music' && styles.tabActive]}
-            onPress={() => setActiveTab('music')}
-          >
-            <Text style={[styles.tabText, activeTab === 'music' && styles.tabTextActive]}>
-              🎵 {language === 'english' ? 'Music' : 'Music'}
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.tab, activeTab === 'breathe' && styles.tabActive]}
-            onPress={() => setActiveTab('breathe')}
-          >
-            <Text style={[styles.tabText, activeTab === 'breathe' && styles.tabTextActive]}>
-              🌬️ {language === 'english' ? 'Breathe' : 'Breathe'}
-            </Text>
-          </TouchableOpacity>
-        </View>
+          <Text style={s.headerTitle}>{isEng ? 'Music & Breathe' : 'Music & Saans'}</Text>
 
-        <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-          {activeTab === 'music' ? (
-            <>
-              {/* Mood-recommended section */}
-              {recommended.length > 0 && (
-                <>
-                  <Text style={styles.sectionLabel}>
-                    {language === 'english' ? '⭐ RECOMMENDED FOR YOU' : '⭐ TERE LIYE RECOMMENDED'}
-                  </Text>
-                  <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.horizontalScroll}>
-                    {recommended.map(p => (
-                      <PlaylistCard key={p.id} playlist={p} onPress={() => openPlaylist(p.spotifyUrl)} featured />
-                    ))}
-                  </ScrollView>
-                </>
-              )}
-
-              <Text style={styles.sectionLabel}>
-                {language === 'english' ? 'ALL PLAYLISTS' : 'SABHI PLAYLISTS'}
-              </Text>
-              {all.map(p => (
-                <PlaylistRow key={p.id} playlist={p} onPress={() => openPlaylist(p.spotifyUrl)} />
-              ))}
-            </>
-          ) : (
-            <>
-              <View style={styles.breatheHero}>
-                <Text style={styles.breatheHeroEmoji}>🫁</Text>
-                <Text style={styles.breatheHeroTitle}>
-                  {language === 'english' ? 'Breathing Exercises' : 'Breathing Exercises'}
+          {/* Now playing bar */}
+          {currentTrack && (
+            <View style={[s.nowPlaying, { borderColor: currentTrack.color + '50' }]}>
+              <Text style={{ fontSize: 24 }}>{currentTrack.emoji}</Text>
+              <View style={{ flex: 1 }}>
+                <Text style={s.npTitle}>{currentTrack.title}</Text>
+                <Text style={[s.npSub, { color: isPlaying ? currentTrack.color : COLORS.textMuted }]}>
+                  {isPlaying ? '▶ Live streaming' : '⏸ Paused'}
                 </Text>
-                <Text style={styles.breatheHeroSub}>
-                  {language === 'english'
-                    ? 'Proven techniques to calm your nervous system in minutes.'
-                    : 'Kuch minutes mein nervous system calm karne ke tarike.'}
-                </Text>
+                {audioError && <Text style={s.npError}>⚠ {audioError}</Text>}
               </View>
-              {BREATHING_EXERCISES.map(ex => (
-                <BreathingCard key={ex.id} exercise={ex} language={language} />
-              ))}
-            </>
+              <TouchableOpacity style={[s.npBtn, { backgroundColor: currentTrack.color }]} onPress={togglePause}>
+                <Ionicons name={isPlaying ? 'pause' : 'play'} size={18} color="#fff" />
+              </TouchableOpacity>
+              <TouchableOpacity style={[s.npBtn, { backgroundColor: COLORS.surface }]} onPress={stopAudio}>
+                <Ionicons name="stop" size={16} color={COLORS.textSecondary} />
+              </TouchableOpacity>
+            </View>
           )}
-          <View style={{ height: 60 }} />
+
+          {/* Ambient tracks */}
+          <Text style={s.sectionLabel}>{isEng ? 'AMBIENT SOUNDS' : 'AMBIENT AWAAZEIN'}</Text>
+          <Text style={s.sectionSub}>{isEng ? 'Free live radio · internet required' : 'Free live radio · internet chahiye'}</Text>
+
+          <View style={s.trackGrid}>
+            {TRACKS.map(track => {
+              const isActive = currentTrack?.id === track.id;
+              const isLoading = loadingId === track.id;
+              return (
+                <TouchableOpacity
+                  key={track.id}
+                  style={[s.trackCard, isActive && { borderColor: track.color, borderWidth: 1.5 }]}
+                  onPress={() => playTrack(track)}
+                  activeOpacity={0.8}
+                >
+                  <LinearGradient
+                    colors={isActive ? [track.color + '22', track.color + '08'] : [COLORS.card, COLORS.surface]}
+                    style={s.trackGrad}
+                  >
+                    <Text style={s.trackEmoji}>{track.emoji}</Text>
+                    <Text style={s.trackTitle}>{track.title}</Text>
+                    <Text style={s.trackSub} numberOfLines={2}>{track.subtitle}</Text>
+                    <View style={s.trackBottom}>
+                      <View style={[s.genrePill, { backgroundColor: track.color + '25' }]}>
+                        <Text style={[s.genreText, { color: track.color }]}>{track.genre}</Text>
+                      </View>
+                      {isLoading
+                        ? <Ionicons name="hourglass" size={16} color={track.color} />
+                        : isActive && isPlaying
+                          ? <Ionicons name="volume-high" size={16} color={track.color} />
+                          : <Ionicons name="play-circle" size={16} color={COLORS.textMuted} />
+                      }
+                    </View>
+                  </LinearGradient>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+
+          {/* Breathing section */}
+          <Text style={[s.sectionLabel, { marginTop: 20 }]}>{isEng ? 'BREATHING EXERCISES' : 'SAANS KI EXERCISES'}</Text>
+          <Text style={s.sectionSub}>{isEng ? 'Voice-guided with audio cues' : 'Awaaz ke saath guided breathing'}</Text>
+
+          {activeEx ? (
+            <View style={s.breathPlayer}>
+              <LinearGradient colors={['#060C1A', '#040810']} style={s.breathPlayerGrad}>
+                <Text style={s.breathExName}>{activeEx.name}</Text>
+                <Text style={s.breathRoundText}>
+                  {isEng ? `Round ${round} of ${activeEx.rounds}` : `Round ${round} / ${activeEx.rounds}`}
+                </Text>
+
+                {/* Animated circle */}
+                <View style={s.circleWrap}>
+                  {/* Outer glow ring */}
+                  <Animated.View style={[s.glowRing, {
+                    width: breathAnim.interpolate({ inputRange: [0.35, 1], outputRange: [130, 230] }),
+                    height: breathAnim.interpolate({ inputRange: [0.35, 1], outputRange: [130, 230] }),
+                    borderRadius: breathAnim.interpolate({ inputRange: [0.35, 1], outputRange: [65, 115] }),
+                    borderColor: phaseColor + '40',
+                  }]} />
+                  {/* Main circle */}
+                  <Animated.View style={[s.breathCircle, {
+                    width: breathAnim.interpolate({ inputRange: [0.35, 1], outputRange: [100, 180] }),
+                    height: breathAnim.interpolate({ inputRange: [0.35, 1], outputRange: [100, 180] }),
+                    borderRadius: breathAnim.interpolate({ inputRange: [0.35, 1], outputRange: [50, 90] }),
+                    borderColor: phaseColor,
+                    backgroundColor: phaseColor + '12',
+                  }]}>
+                    <Text style={[s.breathNum, { color: phaseColor }]}>{countdown}</Text>
+                  </Animated.View>
+                </View>
+
+                <Text style={[s.phaseLabel, { color: phaseColor }]}>
+                  {{
+                    inhale:   isEng ? 'Breathe In 🫁' : 'Saans Lo 🫁',
+                    hold:     isEng ? 'Hold 🤐'       : 'Roko 🤐',
+                    exhale:   isEng ? 'Breathe Out 💨' : 'Saans Chodo 💨',
+                    hold_out: isEng ? 'Hold Out 😮'   : 'Bahar Roko 😮',
+                  }[phase]}
+                </Text>
+                <Text style={s.voiceNote}>🔊 {isEng ? 'Voice guidance on' : 'Awaaz guidance on hai'}</Text>
+
+                <TouchableOpacity style={s.stopBtn} onPress={stopBreathing}>
+                  <Text style={s.stopBtnText}>{isEng ? 'Stop Exercise' : 'Band Karo'}</Text>
+                </TouchableOpacity>
+              </LinearGradient>
+            </View>
+          ) : (
+            BREATH_EX.map(ex => (
+              <TouchableOpacity key={ex.id} style={s.breathCard} onPress={() => startBreathing(ex)} activeOpacity={0.8}>
+                <LinearGradient colors={[COLORS.card, COLORS.surfaceElevated]} style={s.breathCardGrad}>
+                  <View style={[s.breathIcon, { backgroundColor: ex.color + '20' }]}>
+                    <Text style={{ fontSize: 26 }}>{ex.emoji}</Text>
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={s.breathName}>{ex.name}</Text>
+                    <Text style={s.breathDesc}>{ex.desc}</Text>
+                    <View style={s.patternRow}>
+                      {[
+                        { label: isEng ? 'In' : 'Lo', val: ex.inhale },
+                        { label: isEng ? 'Hold' : 'Roko', val: ex.hold },
+                        { label: isEng ? 'Out' : 'Chodo', val: ex.exhale },
+                        ...(ex.holdOut > 0 ? [{ label: isEng ? 'Hold' : 'Roko', val: ex.holdOut }] : []),
+                      ].map((p, i) => (
+                        <View key={i} style={[s.patChip, { backgroundColor: ex.color + '20' }]}>
+                          <Text style={[s.patLabel, { color: ex.color }]}>{p.label}</Text>
+                          <Text style={[s.patVal, { color: ex.color }]}>{p.val}s</Text>
+                        </View>
+                      ))}
+                      <Text style={s.rounds}>× {ex.rounds}</Text>
+                    </View>
+                  </View>
+                  <View style={[s.playBtn, { backgroundColor: ex.color }]}>
+                    <Ionicons name="play" size={18} color="#fff" />
+                  </View>
+                </LinearGradient>
+              </TouchableOpacity>
+            ))
+          )}
+
+          <View style={{ height: 100 }} />
         </ScrollView>
       </SafeAreaView>
     </View>
   );
 }
 
-function PlaylistCard({ playlist: p, onPress, featured }: {
-  playlist: typeof PLAYLISTS[0]; onPress: () => void; featured?: boolean;
-}) {
-  return (
-    <TouchableOpacity
-      style={[styles.playlistCard, featured && styles.playlistCardFeatured]}
-      onPress={onPress}
-      activeOpacity={0.8}
-    >
-      <LinearGradient
-        colors={[p.color + '30', p.color + '10']}
-        style={styles.playlistCardGrad}
-      >
-        <Text style={styles.playlistEmoji}>{p.emoji}</Text>
-        <Text style={styles.playlistName}>{p.title}</Text>
-        <Text style={styles.playlistDesc} numberOfLines={2}>{p.desc}</Text>
-        <View style={styles.playlistMeta}>
-          <Text style={[styles.playlistTracks, { color: p.color }]}>{p.tracks} tracks</Text>
-          <Ionicons name="play-circle" size={28} color={p.color} />
-        </View>
-      </LinearGradient>
-    </TouchableOpacity>
-  );
-}
-
-function PlaylistRow({ playlist: p, onPress }: {
-  playlist: typeof PLAYLISTS[0]; onPress: () => void;
-}) {
-  return (
-    <TouchableOpacity style={styles.playlistRow} onPress={onPress} activeOpacity={0.8}>
-      <LinearGradient colors={[COLORS.card, COLORS.surfaceElevated]} style={styles.playlistRowGrad}>
-        <View style={[styles.playlistRowIcon, { backgroundColor: p.color + '25' }]}>
-          <Text style={{ fontSize: 24 }}>{p.emoji}</Text>
-        </View>
-        <View style={styles.playlistRowBody}>
-          <Text style={styles.playlistRowName}>{p.title}</Text>
-          <Text style={styles.playlistRowDesc}>{p.desc}</Text>
-        </View>
-        <View style={styles.playlistRowRight}>
-          <Text style={[styles.playlistRowTracks, { color: p.color }]}>{p.tracks}</Text>
-          <Ionicons name="open-outline" size={16} color={COLORS.textMuted} />
-        </View>
-      </LinearGradient>
-    </TouchableOpacity>
-  );
-}
-
-function BreathingCard({ exercise: ex, language }: {
-  exercise: typeof BREATHING_EXERCISES[0]; language: string;
-}) {
-  const [active, setActive] = useState(false);
-  return (
-    <View style={styles.breathCard}>
-      <LinearGradient colors={[COLORS.card, COLORS.surfaceElevated]} style={styles.breathCardGrad}>
-        <View style={styles.breathCardHeader}>
-          <Text style={styles.breathEmoji}>{ex.emoji}</Text>
-          <View style={styles.breathInfo}>
-            <Text style={styles.breathName}>{ex.name}</Text>
-            <Text style={styles.breathDesc}>{ex.desc}</Text>
-          </View>
-          <View style={styles.breathRight}>
-            <Text style={styles.breathDuration}>{ex.duration}</Text>
-          </View>
-        </View>
-        <TouchableOpacity
-          style={[styles.breathStartBtn, active && styles.breathStopBtn]}
-          onPress={() => setActive(!active)}
-          activeOpacity={0.8}
-        >
-          <Ionicons name={active ? 'stop-circle' : 'play-circle'} size={18} color="#fff" />
-          <Text style={styles.breathStartText}>
-            {active
-              ? (language === 'english' ? 'Stop' : 'Roko')
-              : (language === 'english' ? 'Start' : 'Shuru karo')}
-          </Text>
-        </TouchableOpacity>
-      </LinearGradient>
-    </View>
-  );
-}
-
-const styles = StyleSheet.create({
+const s = StyleSheet.create({
   root: { flex: 1, backgroundColor: COLORS.background },
-  safeArea: { flex: 1 },
-  header: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    paddingHorizontal: 16, paddingVertical: 12,
-    borderBottomWidth: 1, borderBottomColor: COLORS.border,
-  },
-  backBtn: {
-    width: 40, height: 40, borderRadius: 20,
-    backgroundColor: COLORS.surface, justifyContent: 'center', alignItems: 'center',
-  },
-  headerTitle: { fontSize: 18, fontWeight: '800', color: COLORS.textPrimary },
+  safe: { flex: 1 },
+  content: { paddingHorizontal: 20, paddingTop: 16 },
+  headerTitle: { fontSize: 24, fontWeight: '800', color: COLORS.textPrimary, marginBottom: 16 },
+  sectionLabel: { fontSize: 11, fontWeight: '700', letterSpacing: 1.5, color: COLORS.textMuted, textTransform: 'uppercase', marginBottom: 4 },
+  sectionSub: { fontSize: 12, color: COLORS.textSecondary + '90', marginBottom: 12 },
 
-  tabs: {
-    flexDirection: 'row', paddingHorizontal: 16, paddingVertical: 10, gap: 10,
-    borderBottomWidth: 1, borderBottomColor: COLORS.border,
-  },
-  tab: {
-    flex: 1, paddingVertical: 10, borderRadius: RADIUS.lg,
-    borderWidth: 1, borderColor: COLORS.border, alignItems: 'center',
-    backgroundColor: COLORS.surface,
-  },
-  tabActive: { backgroundColor: COLORS.primaryGlow, borderColor: COLORS.primary },
-  tabText: { fontSize: 13, fontWeight: '700', color: COLORS.textSecondary },
-  tabTextActive: { color: COLORS.primary },
+  nowPlaying: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: COLORS.surface, borderRadius: RADIUS.xl, padding: 14, marginBottom: 16, borderWidth: 1 },
+  npTitle: { fontSize: 14, fontWeight: '700', color: COLORS.textPrimary },
+  npSub: { fontSize: 12, marginTop: 2, fontWeight: '600' },
+  npError: { fontSize: 11, color: COLORS.warning, marginTop: 2 },
+  npBtn: { width: 36, height: 36, borderRadius: 18, justifyContent: 'center', alignItems: 'center' },
 
-  content: { padding: 16 },
-  sectionLabel: {
-    fontSize: 11, fontWeight: '700', letterSpacing: 1.5,
-    color: COLORS.textMuted, textTransform: 'uppercase', marginBottom: 12, marginTop: 8,
-  },
-  horizontalScroll: { marginHorizontal: -16, paddingLeft: 16, marginBottom: 20 },
+  trackGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginBottom: 8 },
+  trackCard: { width: '47.5%', borderRadius: RADIUS.xl, overflow: 'hidden', borderWidth: 1, borderColor: COLORS.border },
+  trackGrad: { padding: 14, borderRadius: RADIUS.xl, minHeight: 130 },
+  trackEmoji: { fontSize: 26, marginBottom: 6 },
+  trackTitle: { fontSize: 13, fontWeight: '700', color: COLORS.textPrimary, marginBottom: 3 },
+  trackSub: { fontSize: 10, color: COLORS.textSecondary, lineHeight: 14, flex: 1, marginBottom: 8 },
+  trackBottom: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  genrePill: { paddingHorizontal: 7, paddingVertical: 3, borderRadius: RADIUS.full },
+  genreText: { fontSize: 9, fontWeight: '700' },
 
-  playlistCard: { width: 170, marginRight: 12, borderRadius: RADIUS.xl, overflow: 'hidden' },
-  playlistCardFeatured: {},
-  playlistCardGrad: {
-    padding: 16, borderRadius: RADIUS.xl,
-    borderWidth: 1, borderColor: COLORS.border, minHeight: 160,
-  },
-  playlistEmoji: { fontSize: 32, marginBottom: 10 },
-  playlistName: { fontSize: 15, fontWeight: '800', color: COLORS.textPrimary, marginBottom: 4 },
-  playlistDesc: { fontSize: 12, color: COLORS.textSecondary, lineHeight: 17, marginBottom: 12 },
-  playlistMeta: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  playlistTracks: { fontSize: 12, fontWeight: '700' },
-
-  playlistRow: { marginBottom: 8, borderRadius: RADIUS.xl, overflow: 'hidden' },
-  playlistRowGrad: {
-    flexDirection: 'row', alignItems: 'center', gap: 14, padding: 14,
-    borderRadius: RADIUS.xl, borderWidth: 1, borderColor: COLORS.border,
-  },
-  playlistRowIcon: {
-    width: 52, height: 52, borderRadius: 14, justifyContent: 'center', alignItems: 'center',
-  },
-  playlistRowBody: { flex: 1 },
-  playlistRowName: { fontSize: 14, fontWeight: '700', color: COLORS.textPrimary },
-  playlistRowDesc: { fontSize: 12, color: COLORS.textSecondary, marginTop: 2 },
-  playlistRowRight: { alignItems: 'flex-end', gap: 4 },
-  playlistRowTracks: { fontSize: 12, fontWeight: '700' },
-
-  breatheHero: { alignItems: 'center', marginBottom: 24, paddingVertical: 8 },
-  breatheHeroEmoji: { fontSize: 48, marginBottom: 10 },
-  breatheHeroTitle: { fontSize: 22, fontWeight: '800', color: COLORS.textPrimary },
-  breatheHeroSub: {
-    fontSize: 14, color: COLORS.textSecondary, textAlign: 'center',
-    lineHeight: 21, marginTop: 6, paddingHorizontal: 20,
-  },
+  breathPlayer: { borderRadius: RADIUS['2xl'], overflow: 'hidden', marginBottom: 12 },
+  breathPlayerGrad: { alignItems: 'center', paddingVertical: 32, paddingHorizontal: 20, borderRadius: RADIUS['2xl'], borderWidth: 1, borderColor: COLORS.border },
+  breathExName: { fontSize: 18, fontWeight: '800', color: COLORS.textPrimary, marginBottom: 4 },
+  breathRoundText: { fontSize: 13, color: COLORS.textMuted, marginBottom: 28 },
+  circleWrap: { width: 240, height: 240, justifyContent: 'center', alignItems: 'center', marginBottom: 24 },
+  glowRing: { position: 'absolute', borderWidth: 2 },
+  breathCircle: { justifyContent: 'center', alignItems: 'center', borderWidth: 2.5 },
+  breathNum: { fontSize: 40, fontWeight: '900' },
+  phaseLabel: { fontSize: 22, fontWeight: '800', marginBottom: 8 },
+  voiceNote: { fontSize: 12, color: COLORS.textMuted, marginBottom: 24 },
+  stopBtn: { paddingHorizontal: 36, paddingVertical: 12, borderRadius: RADIUS.full, borderWidth: 1, borderColor: COLORS.border },
+  stopBtnText: { color: COLORS.textSecondary, fontWeight: '600', fontSize: 14 },
 
   breathCard: { marginBottom: 10, borderRadius: RADIUS.xl, overflow: 'hidden' },
-  breathCardGrad: {
-    padding: 16, borderRadius: RADIUS.xl,
-    borderWidth: 1, borderColor: COLORS.border,
-  },
-  breathCardHeader: { flexDirection: 'row', alignItems: 'flex-start', gap: 12, marginBottom: 14 },
-  breathEmoji: { fontSize: 28, marginTop: 2 },
-  breathInfo: { flex: 1 },
-  breathName: { fontSize: 15, fontWeight: '700', color: COLORS.textPrimary },
-  breathDesc: { fontSize: 12, color: COLORS.textSecondary, marginTop: 3, lineHeight: 18 },
-  breathRight: {},
-  breathDuration: { fontSize: 12, fontWeight: '700', color: COLORS.primary },
-  breathStartBtn: {
-    flexDirection: 'row', alignItems: 'center', gap: 8,
-    backgroundColor: COLORS.primary, borderRadius: RADIUS.lg,
-    paddingVertical: 10, paddingHorizontal: 20, alignSelf: 'flex-start',
-  },
-  breathStopBtn: { backgroundColor: COLORS.danger },
-  breathStartText: { fontSize: 14, fontWeight: '700', color: '#fff' },
+  breathCardGrad: { flexDirection: 'row', alignItems: 'center', padding: 16, gap: 14, borderRadius: RADIUS.xl, borderWidth: 1, borderColor: COLORS.border },
+  breathIcon: { width: 52, height: 52, borderRadius: 14, justifyContent: 'center', alignItems: 'center' },
+  breathName: { fontSize: 15, fontWeight: '700', color: COLORS.textPrimary, marginBottom: 3 },
+  breathDesc: { fontSize: 12, color: COLORS.textSecondary, lineHeight: 17, marginBottom: 8 },
+  patternRow: { flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap' },
+  patChip: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: RADIUS.md, alignItems: 'center' },
+  patLabel: { fontSize: 9, fontWeight: '700', textTransform: 'uppercase' },
+  patVal: { fontSize: 13, fontWeight: '900' },
+  rounds: { fontSize: 12, color: COLORS.textMuted, fontWeight: '600' },
+  playBtn: { width: 44, height: 44, borderRadius: 13, justifyContent: 'center', alignItems: 'center' },
 });
