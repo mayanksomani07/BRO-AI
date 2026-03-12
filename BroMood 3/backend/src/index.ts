@@ -17,7 +17,7 @@ const PORT = process.env.PORT ?? 3000;
 // ─── Security middleware ───────────────────────────────────────────────────────
 app.use(helmet());
 app.use(cors({
-  origin: ['https://bromood.app', 'exp://localhost:8081', 'http://localhost:8081'],
+  origin: ['https://bromood.app', 'exp://localhost:8082', 'http://localhost:8082'],
   methods: ['GET', 'POST'],
   credentials: false,
 }));

@@ -1,339 +1,723 @@
-import React, { useEffect, useRef, useState } from 'react';
+/**
+ * TasksScreen v6 — Fully re-designed task experience
+ *
+ * New features:
+ * - XP persists across sessions (AsyncStorage fix in mock)
+ * - Today's XP earned counter + animated bar
+ * - 7-day streak calendar in XP card
+ * - Task cards: tap "Mark Done" → confirm state → satisfying completion animation
+ * - Scale + fade animation when task is marked complete
+ * - Confetti-style "All done!" banner with total XP
+ * - Bonus tasks: gated behind "I want more challenges 🎯" button
+ * - Unlimited bonus/extra tasks from pool
+ * - Better XP popup — large coin-bounce animation
+ * - Full sync with HomeScreen via shared queries + useFocusEffect
+ */
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
-  Animated, Alert, Modal
+  Animated, ActivityIndicator,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView }   from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Ionicons } from '@expo/vector-icons';
-import * as Haptics from 'expo-haptics';
+import { Ionicons }       from '@expo/vector-icons';
+import { useFocusEffect } from '@react-navigation/native';
+import * as Haptics       from 'expo-haptics';
 
 import { COLORS, RADIUS } from '../../constants/theme';
-import { useUserStore } from '../../store/userStore';
-import { useMoodStore } from '../../store/moodStore';
-import { getUserStats, markTaskCompleted, getCompletedTaskIds, getLevelForXP, LEVELS } from '../../db/queries';
+import { useUserStore }   from '../../store/userStore';
+import { useMoodStore }   from '../../store/moodStore';
+import {
+  getUserStats, markTaskCompleted, getCompletedTaskIds,
+  getTodayXP, getStreakCalendar, LEVELS,
+} from '../../db/queries';
+import { DailyTask, CATEGORY_COLORS, getAvailableTasks, getNextBonusTasks } from '../../data/tasks';
 import EmergencyButton from '../../components/EmergencyButton';
 
-interface DailyTask {
-  id: string;
-  title: string;
-  description: string;
-  durationMinutes: number;
-  xpReward: number;
-  category: 'mindfulness' | 'social' | 'movement' | 'self_care' | 'reflection';
-  moodThreshold?: number;
-  emoji: string;
+// ── Level helpers ─────────────────────────────────────────────────────────────
+function getLevelIndex(xp: number) {
+  const idx = LEVELS.findIndex(l => xp >= l.min && xp <= l.max);
+  return idx < 0 ? 0 : idx;
+}
+function getLevelProgress(xp: number) {
+  const idx   = getLevelIndex(xp);
+  const l     = LEVELS[idx];
+  const range = l.max === Infinity ? 500 : l.max - l.min;
+  return {
+    pct:    Math.min((xp - l.min) / Math.max(range, 1), 1),
+    needed: l.max === Infinity ? 0 : l.max - xp + 1,
+    title:  l.title,
+  };
 }
 
-const TASKS: DailyTask[] = [
-  { id: 'task_water', title: 'Ek glass paani pi', description: '2 minutes. Bas itna. Hydration is self-care.', durationMinutes: 2, xpReward: 10, category: 'self_care', emoji: '💧', moodThreshold: 3 },
-  { id: 'task_breath', title: '4-7-8 Breathing', description: '4 sec inhale, hold 7, exhale 8. Do 3 rounds.', durationMinutes: 5, xpReward: 20, category: 'mindfulness', emoji: '🌬️' },
-  { id: 'task_walk', title: '10 min walk — no phone', description: 'Bahar ja. Kuch mat dekh. Bas chal. Fresh air works.', durationMinutes: 10, xpReward: 30, category: 'movement', emoji: '🚶' },
-  { id: 'task_journal', title: '3 cheezein likh', description: 'Aaj 3 cheezein jo theek thin. Chhoti bhi chalti hai.', durationMinutes: 5, xpReward: 25, category: 'reflection', emoji: '✍️' },
-  { id: 'task_text_friend', title: 'Ek dost ko text kar', description: '"Kya haal hai?" — bas itna kaafi hai.', durationMinutes: 2, xpReward: 35, category: 'social', emoji: '📱', moodThreshold: 5 },
-  { id: 'task_stretch', title: '5 min stretch', description: 'Neck, shoulders, back. Body ko thoda pyaar do.', durationMinutes: 5, xpReward: 20, category: 'movement', emoji: '🧘' },
-  { id: 'task_cold_water', title: 'Cold water on face', description: 'Emergency reset. 30 seconds. Works every time.', durationMinutes: 1, xpReward: 15, category: 'self_care', emoji: '💦', moodThreshold: 4 },
-  { id: 'task_song', title: 'Ek achha gaana sun', description: 'Jo favourite hai. Aankhein band. Sirf sun.', durationMinutes: 4, xpReward: 15, category: 'self_care', emoji: '🎵' },
-  { id: 'task_new_person', title: 'Naye dost se baat kar', description: 'LinkedIn, college group, anywhere. Ek hello.', durationMinutes: 10, xpReward: 50, category: 'social', emoji: '🤝', moodThreshold: 7 },
-  { id: 'task_gratitude', title: 'Gratitude note', description: 'Ek cheez likh jiske liye grateful hai aaj.', durationMinutes: 3, xpReward: 20, category: 'reflection', emoji: '🙏' },
-];
-
-const CATEGORY_COLORS: Record<DailyTask['category'], string> = {
-  mindfulness: '#A78BFA',
-  social: '#34D399',
-  movement: '#60A5FA',
-  self_care: '#F59E0B',
-  reflection: '#F472B6',
-};
-
-export default function TasksScreen() {
-  const { language } = useUserStore();
-  const { currentSnapshot } = useMoodStore();
-  const [stats, setStats] = useState<{ total_xp: number; current_level: string; streak_days: number } | null>(null);
-  const [completedIds, setCompletedIds] = useState<Set<string>>(new Set());
-  const [xpPopup, setXpPopup] = useState<{ xp: number; visible: boolean }>({ xp: 0, visible: false });
-  const xpAnim = useRef(new Animated.Value(0)).current;
-  const score = currentSnapshot?.score ?? 5;
-
-  useEffect(() => { loadData(); }, []);
-
-  const loadData = async () => {
-    const [s, ids] = await Promise.all([getUserStats(), getCompletedTaskIds()]);
-    setStats(s);
-    setCompletedIds(new Set(ids));
-  };
-
-  const getAvailableTasks = (): DailyTask[] => {
-    return TASKS.filter(t => {
-      if (t.moodThreshold !== undefined) {
-        if (score >= 5 && t.moodThreshold <= 3) return false;
-        if (score < 3 && t.moodThreshold > 3) return false;
-      }
-      return true;
-    }).slice(0, 6);
-  };
-
-  const handleComplete = async (task: DailyTask) => {
-    if (completedIds.has(task.id)) return;
-
-    // Show confirmation modal
-    Alert.alert(
-      language === 'english' ? `Mark "${task.title}" as Done?` : `"${task.title}" complete kiya?`,
-      language === 'english'
-        ? `You'll earn +${task.xpReward} XP for completing this!`
-        : `+${task.xpReward} XP milega isko complete karne ke liye!`,
-      [
-        { text: language === 'english' ? 'Not yet' : 'Abhi nahi', style: 'cancel' },
-        {
-          text: language === 'english' ? 'Yes, Done! ✅' : 'Haan, Ho Gaya! ✅',
-          onPress: async () => {
-            await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-            await markTaskCompleted(task.id, task.xpReward);
-
-            // XP popup animation
-            setXpPopup({ xp: task.xpReward, visible: true });
-            Animated.sequence([
-              Animated.spring(xpAnim, { toValue: 1, useNativeDriver: true }),
-              Animated.delay(1500),
-              Animated.timing(xpAnim, { toValue: 0, duration: 300, useNativeDriver: true }),
-            ]).start(() => setXpPopup(p => ({ ...p, visible: false })));
-
-            await loadData();
-          },
-        },
-      ]
-    );
-  };
-
-  const currentLevelIndex = LEVELS.findIndex(l => l.title === (stats?.current_level ?? 'Naya Bro'));
-  const nextLevel = LEVELS[currentLevelIndex + 1];
-  const currentXP = stats?.total_xp ?? 0;
-  const progressPct = nextLevel
-    ? Math.min((currentXP - (LEVELS[currentLevelIndex]?.min ?? 0)) / (nextLevel.min - (LEVELS[currentLevelIndex]?.min ?? 0)), 1)
-    : 1;
-
-  const tasks = getAvailableTasks();
-  const doneCount = tasks.filter(t => completedIds.has(t.id)).length;
+// ── StreakCalendar ────────────────────────────────────────────────────────────
+function StreakCalendar({ calendar }: { calendar: boolean[] }) {
+  const days = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
+  const today = new Date().getDay(); // 0=Sun
+  const dayLabels = [...days.slice(today === 0 ? 0 : today), ...days.slice(0, today === 0 ? 0 : today)].slice(-7);
 
   return (
-    <View style={styles.root}>
-      <LinearGradient colors={[COLORS.background, '#0A0E1F']} style={StyleSheet.absoluteFillObject} />
-
-      {/* XP Popup */}
-      {xpPopup.visible && (
-        <Animated.View
-          style={[styles.xpPopup, {
-            opacity: xpAnim,
-            transform: [{ scale: xpAnim }, {
-              translateY: xpAnim.interpolate({ inputRange: [0, 1], outputRange: [20, 0] })
-            }]
-          }]}
-        >
-          <Text style={styles.xpPopupText}>+{xpPopup.xp} XP 🎉</Text>
-        </Animated.View>
-      )}
-
-      <SafeAreaView style={styles.safeArea} edges={['top']}>
-        <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-          <Text style={styles.headerTitle}>
-            {language === 'english' ? 'Daily Challenges' : 'Aaj ka Challenge'}
-          </Text>
-
-          {/* Level Card */}
-          <View style={styles.levelCard}>
-            <LinearGradient colors={['#1A1060', '#0D1B40']} style={styles.levelGradient}>
-              <View style={styles.levelRow}>
-                <View>
-                  <Text style={styles.levelTitle}>{stats?.current_level ?? 'Naya Bro'}</Text>
-                  <Text style={styles.xpText}>{currentXP} XP</Text>
-                </View>
-                <Text style={styles.levelEmoji}>
-                  {currentXP >= 1000 ? '🏆' : currentXP >= 600 ? '🦾' : currentXP >= 300 ? '💪' : currentXP >= 100 ? '📚' : '🌱'}
-                </Text>
-              </View>
-              <View style={styles.progressTrack}>
-                <View style={[styles.progressFill, { width: `${progressPct * 100}%` }]} />
-              </View>
-              <Text style={styles.nextLevelText}>
-                {nextLevel ? `${nextLevel.min - currentXP} XP to ${nextLevel.title}` : 'Max level reached! 🏆'}
-              </Text>
-            </LinearGradient>
-          </View>
-
-          {/* Progress today */}
-          <View style={styles.todayProgress}>
-            <Text style={styles.todayText}>
-              {language === 'english' ? `Today: ${doneCount}/${tasks.length} done` : `Aaj: ${doneCount}/${tasks.length} complete`}
-            </Text>
-            <View style={styles.todayBar}>
-              {tasks.map((t, i) => (
-                <View
-                  key={t.id}
-                  style={[styles.todayDot, completedIds.has(t.id) && styles.todayDotDone]}
-                />
-              ))}
+    <View style={cal.row}>
+      {calendar.map((done, i) => {
+        const isToday = i === 6;
+        return (
+          <View key={i} style={cal.cell}>
+            <View style={[cal.dot, done && cal.dotDone, isToday && cal.dotToday]}>
+              {done && <Text style={{ fontSize: 8 }}>✓</Text>}
             </View>
+            <Text style={[cal.label, isToday && { color: COLORS.primary }]}>{dayLabels[i]}</Text>
           </View>
-
-          {/* Tasks */}
-          <Text style={styles.sectionLabel}>
-            {language === 'english' ? 'YOUR TASKS' : 'TERA KAAM'}
-          </Text>
-          {tasks.map(task => (
-            <TaskItem
-              key={task.id}
-              task={task}
-              completed={completedIds.has(task.id)}
-              onComplete={handleComplete}
-              language={language}
-            />
-          ))}
-
-          {/* Streak */}
-          <View style={styles.streakCard}>
-            <LinearGradient colors={['#1A1020', '#0D1028']} style={styles.streakGradient}>
-              <Text style={styles.streakEmoji}>🔥</Text>
-              <View>
-                <Text style={styles.streakCount}>{stats?.streak_days ?? 0} day streak</Text>
-                <Text style={styles.streakSub}>
-                  {language === 'english' ? 'Keep going bhai!' : 'Chalta reh bhai!'}
-                </Text>
-              </View>
-            </LinearGradient>
-          </View>
-
-          <View style={{ height: 100 }} />
-        </ScrollView>
-      </SafeAreaView>
-      <EmergencyButton />
+        );
+      })}
     </View>
   );
 }
 
-function TaskItem({ task, completed, onComplete, language }: {
-  task: DailyTask; completed: boolean;
-  onComplete: (t: DailyTask) => void; language: string;
+// ── XPCard ────────────────────────────────────────────────────────────────────
+function XPCard({ xp, streak, todayXp, calendar }: {
+  xp: number; streak: number; todayXp: number; calendar: boolean[];
 }) {
-  const color = CATEGORY_COLORS[task.category];
-  const scaleAnim = useRef(new Animated.Value(1)).current;
+  const { pct, needed, title } = getLevelProgress(xp);
+  const lvlNum  = getLevelIndex(xp) + 1;
+  const barAnim = useRef(new Animated.Value(0)).current;
+  const todayAnim = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    Animated.spring(barAnim, { toValue: pct, useNativeDriver: false, tension: 40, friction: 8 }).start();
+  }, [pct]);
+
+  const barWidth = barAnim.interpolate({ inputRange: [0, 1], outputRange: ['0%', '100%'] });
+  const emoji    = xp >= 1001 ? '🏆' : xp >= 601 ? '⚡' : xp >= 301 ? '🔥' : xp >= 101 ? '💪' : '🌱';
 
   return (
-    <Animated.View style={[styles.taskCard, { transform: [{ scale: scaleAnim }] }]}>
-      <LinearGradient
-        colors={completed ? ['#1A1A2E', '#1A1A2E'] : [COLORS.card, COLORS.surfaceElevated]}
-        style={[styles.taskGradient, completed && styles.taskCompleted]}
-      >
-        <View style={[styles.taskIconWrap, { backgroundColor: color + '20' }]}>
-          <Text style={{ fontSize: 22 }}>{task.emoji}</Text>
-        </View>
-        <View style={styles.taskBody}>
-          <Text style={[styles.taskTitle, completed && styles.taskTitleDone]}>{task.title}</Text>
-          <Text style={styles.taskDesc} numberOfLines={2}>{task.description}</Text>
-          <View style={styles.taskMeta}>
-            <View style={[styles.categoryChip, { backgroundColor: color + '20', borderColor: color + '40' }]}>
-              <Text style={[styles.categoryText, { color }]}>{task.category.replace('_', ' ')}</Text>
+    <View style={xpS.card}>
+      <LinearGradient colors={['#1E1B4B', '#312E81']} style={xpS.grad}>
+        <View style={xpS.glowOrb} />
+
+        {/* Top row */}
+        <View style={xpS.topRow}>
+          <View style={{ flex: 1 }}>
+            <View style={xpS.badgeRow}>
+              <View style={xpS.badge}><Text style={xpS.badgeTxt}>LVL {lvlNum}</Text></View>
+              {streak >= 2 && (
+                <View style={xpS.streakBadge}>
+                  <Text style={{ fontSize: 12 }}>🔥</Text>
+                  <Text style={xpS.streakBadgeTxt}>{streak} day streak</Text>
+                </View>
+              )}
             </View>
-            <Text style={styles.taskDuration}>⏱ {task.durationMinutes}m</Text>
-            <Text style={styles.taskXP}>+{task.xpReward} XP</Text>
+            <Text style={xpS.levelName}>{title}</Text>
+            <View style={xpS.xpRow}>
+              <Text style={xpS.xpCount}>{xp} XP total</Text>
+              {todayXp > 0 && (
+                <View style={xpS.todayPill}>
+                  <Text style={xpS.todayTxt}>+{todayXp} today ✨</Text>
+                </View>
+              )}
+            </View>
+          </View>
+          <View style={xpS.emojiCircle}>
+            <Text style={{ fontSize: 24 }}>{emoji}</Text>
           </View>
         </View>
 
-        {/* Explicit complete button — not just tapping the whole card */}
-        <TouchableOpacity
-          style={[styles.completeBtn, completed && styles.completeBtnDone]}
-          onPress={() => !completed && onComplete(task)}
-          disabled={completed}
-          activeOpacity={0.8}
-        >
-          {completed
-            ? <Ionicons name="checkmark-circle" size={28} color={COLORS.success} />
-            : (
-              <View style={styles.completeBtnInner}>
-                <Ionicons name="checkmark" size={16} color={COLORS.primary} />
+        {/* Progress bar */}
+        <View style={{ marginBottom: 14 }}>
+          <View style={xpS.barTrack}>
+            <Animated.View style={[xpS.barFill, { width: barWidth }]} />
+            {[0.25, 0.5, 0.75].map(m => (
+              <View key={m} style={[xpS.tick, { left: `${m * 100}%` as any }]} />
+            ))}
+          </View>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 4 }}>
+            <Text style={xpS.barLabel}>0%</Text>
+            <Text style={xpS.barLabel}>{Math.round(pct * 100)}%</Text>
+            <Text style={xpS.barLabel}>100%</Text>
+          </View>
+          <Text style={{ fontSize: 11, color: COLORS.textMuted, marginTop: 4, textAlign: 'center' }}>
+            {needed > 0 ? `${needed} XP to next level` : '🏆 Max level reached!'}
+          </Text>
+        </View>
+
+        {/* 7-day calendar */}
+        {calendar.length === 7 && (
+          <>
+            <View style={xpS.divider} />
+            <Text style={xpS.calTitle}>LAST 7 DAYS</Text>
+            <StreakCalendar calendar={calendar} />
+          </>
+        )}
+      </LinearGradient>
+    </View>
+  );
+}
+
+// ── TaskCard ──────────────────────────────────────────────────────────────────
+function TaskCard({
+  task, completed: completedProp, isBonus, onComplete,
+}: {
+  task: DailyTask; completed: boolean; isBonus?: boolean;
+  onComplete: (t: DailyTask) => Promise<void>;
+}) {
+  // Optimistic — flip to done immediately on confirm, don't wait for DB
+  const [localDone, setLocalDone]   = useState(false);
+  const [confirming, setConfirming] = useState(false);
+  const [loading,    setLoading]    = useState(false);
+  const [countdown,  setCountdown]  = useState(3);
+  const completed = completedProp || localDone;
+  const color = CATEGORY_COLORS[task.category];
+  const scaleAnim   = useRef(new Animated.Value(1)).current;
+  const shakeAnim   = useRef(new Animated.Value(0)).current;
+  const progressAnim = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    if (!confirming) { setCountdown(3); progressAnim.setValue(0); return; }
+    setCountdown(3);
+    Animated.timing(progressAnim, { toValue: 1, duration: 3000, useNativeDriver: false }).start();
+    const t1 = setTimeout(() => setCountdown(2), 1000);
+    const t2 = setTimeout(() => setCountdown(1), 2000);
+    const t3 = setTimeout(() => { setConfirming(false); }, 3100);
+    return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); };
+  }, [confirming]);
+
+  const handlePress = async () => {
+    if (completed || loading) return;
+    if (!confirming) {
+      setConfirming(true);
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+      return;
+    }
+    // Confirmed — optimistic update immediately
+    setLocalDone(true);
+    setLoading(true);
+    setConfirming(false);
+    Animated.spring(scaleAnim, { toValue: 0.97, useNativeDriver: true }).start(() =>
+      Animated.spring(scaleAnim, { toValue: 1, useNativeDriver: true }).start()
+    );
+    try { await onComplete(task); } catch { setLocalDone(false); } finally { setLoading(false); }
+  };
+
+  const handleCancel = () => {
+    setConfirming(false);
+    Animated.sequence([
+      Animated.timing(shakeAnim, { toValue: 6,  duration: 55, useNativeDriver: true }),
+      Animated.timing(shakeAnim, { toValue: -6, duration: 55, useNativeDriver: true }),
+      Animated.timing(shakeAnim, { toValue: 0,  duration: 55, useNativeDriver: true }),
+    ]).start();
+  };
+
+  const progressWidth = progressAnim.interpolate({ inputRange: [0, 1], outputRange: ['0%', '100%'] });
+
+  return (
+    <Animated.View style={{ transform: [{ translateX: shakeAnim }, { scale: scaleAnim }], marginBottom: 10 }}>
+      <LinearGradient
+        colors={
+          completed  ? ['#0A1F0A', '#081508'] :
+          confirming ? ['#1A0F38', '#110A2E'] :
+          isBonus    ? ['#1A0F2E', '#120A24'] :
+                       ['#0F172A', '#1A2035']
+        }
+        style={[tc.card, completed && tc.cardDone, confirming && tc.cardConfirm]}
+      >
+        {confirming && (
+          <View style={tc.confirmTrack}>
+            <Animated.View style={[tc.confirmFill, { width: progressWidth }]} />
+          </View>
+        )}
+        {isBonus && !completed && (
+          <View style={tc.bonusBadge}><Text style={tc.bonusBadgeTxt}>⚡ BONUS</Text></View>
+        )}
+        <View style={tc.top}>
+          <View style={[tc.iconBox, { backgroundColor: completed ? COLORS.success + '22' : color + '22' }]}>
+            {completed
+              ? <Ionicons name="checkmark-circle" size={22} color={COLORS.success} />
+              : <Text style={{ fontSize: 20 }}>{task.emoji}</Text>
+            }
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={[tc.title, completed && tc.titleDone]} numberOfLines={2}>{task.title}</Text>
+            <Text style={tc.desc} numberOfLines={1}>{task.description}</Text>
+            <View style={tc.metaRow}>
+              <View style={[tc.xpPill, { backgroundColor: color + '20' }]}>
+                <Text style={[tc.xpTxt, { color }]}>+{task.xpReward} XP</Text>
               </View>
-            )
-          }
-        </TouchableOpacity>
+              <Text style={tc.dur}>⏱ {task.durationMinutes}m</Text>
+              <View style={[tc.catPill, { backgroundColor: color + '15' }]}>
+                <Text style={[tc.catTxt, { color }]}>{task.category}</Text>
+              </View>
+            </View>
+          </View>
+        </View>
+
+        {!completed && (
+          <View style={tc.actionRow}>
+            {confirming ? (
+              <>
+                <TouchableOpacity style={tc.cancelBtn} onPress={handleCancel} activeOpacity={0.7}>
+                  <Ionicons name="close" size={14} color={COLORS.textMuted} />
+                  <Text style={tc.cancelTxt}>Cancel</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[tc.confirmBtn, { backgroundColor: COLORS.success }]}
+                  onPress={handlePress} activeOpacity={0.85}
+                >
+                  <Ionicons name="checkmark-circle" size={17} color="#fff" />
+                  <Text style={tc.confirmTxt}>Yes, Done! ({countdown})</Text>
+                </TouchableOpacity>
+              </>
+            ) : (
+              <TouchableOpacity
+                style={[tc.doneBtn, { borderColor: color, backgroundColor: color + '15' }]}
+                onPress={handlePress} activeOpacity={0.8} disabled={loading}
+              >
+                {loading
+                  ? <ActivityIndicator size="small" color={color} />
+                  : <><Ionicons name="checkmark-outline" size={15} color={color} /><Text style={[tc.doneTxt, { color }]}>Mark as Done</Text></>
+                }
+              </TouchableOpacity>
+            )}
+          </View>
+        )}
+        {completed && (
+          <View style={tc.doneStrip}>
+            <Ionicons name="checkmark-circle" size={13} color={COLORS.success} />
+            <Text style={tc.doneStripTxt}>Completed · +{task.xpReward} XP earned 🎉</Text>
+          </View>
+        )}
       </LinearGradient>
     </Animated.View>
   );
 }
 
-const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: COLORS.background },
-  safeArea: { flex: 1 },
-  content: { paddingHorizontal: 20, paddingTop: 16 },
-  headerTitle: { fontSize: 24, fontWeight: '800', color: COLORS.textPrimary, marginBottom: 16 },
+// ── TasksScreen ───────────────────────────────────────────────────────────────
+export default function TasksScreen({ navigation }: { navigation?: any }) {
+  const { language }        = useUserStore();
+  const { currentSnapshot } = useMoodStore();
+  const score               = currentSnapshot?.score ?? 5;
+  const isEng               = language === 'english';
 
-  xpPopup: {
-    position: 'absolute', top: '40%', alignSelf: 'center',
-    backgroundColor: COLORS.success, borderRadius: RADIUS.full,
-    paddingHorizontal: 28, paddingVertical: 14, zIndex: 999,
-    shadowColor: COLORS.success, shadowOpacity: 0.6, shadowRadius: 20,
+  const [completedIds,  setCompletedIds]  = useState<Set<string>>(new Set());
+  const [bonusTasks,    setBonusTasks]    = useState<DailyTask[]>([]);
+  const [bonusPage,     setBonusPage]     = useState(0);
+  const [wantBonus,     setWantBonus]     = useState(false);
+  const [stats,         setStats]         = useState({ xp: 0, level: 'Naya Bro', streak: 0 });
+  const [todayXp,       setTodayXp]       = useState(0);
+  const [calendar,      setCalendar]      = useState<boolean[]>([]);
+  const [xpPopup,       setXpPopup]       = useState<{ xp: number; visible: boolean }>({ xp: 0, visible: false });
+  const [levelUp,       setLevelUp]       = useState<string | null>(null);
+
+  const xpAnim   = useRef(new Animated.Value(0)).current;
+  const lvlAnim  = useRef(new Animated.Value(0)).current;
+  const prevLvl  = useRef('');
+
+  const baseTasks   = getAvailableTasks(score);
+  const allBaseDone = baseTasks.length > 0 && baseTasks.every(t => completedIds.has(t.id));
+  const doneCount   = baseTasks.filter(t => completedIds.has(t.id)).length;
+
+  const loadData = useCallback(async () => {
+    try {
+      const [ids, st, txp, cal] = await Promise.all([
+        getCompletedTaskIds(),
+        getUserStats(),
+        getTodayXP(),
+        getStreakCalendar(),
+      ]);
+      const idSet = new Set(ids);
+      setCompletedIds(idSet);
+      setTodayXp(txp);
+      setCalendar(cal);
+      if (st) {
+        const newLvl = st.current_level;
+        if (prevLvl.current && prevLvl.current !== newLvl) {
+          setLevelUp(newLvl);
+          Animated.spring(lvlAnim, { toValue: 1, useNativeDriver: true }).start();
+          setTimeout(() => {
+            Animated.timing(lvlAnim, { toValue: 0, duration: 350, useNativeDriver: true })
+              .start(() => setLevelUp(null));
+          }, 3200);
+        }
+        prevLvl.current = newLvl;
+        setStats({ xp: st.total_xp, level: newLvl, streak: st.streak_days });
+      }
+      if (baseTasks.length > 0 && baseTasks.every(t => idSet.has(t.id)) && wantBonus) {
+        setBonusTasks(prev => prev.length > 0 ? prev : getNextBonusTasks(idSet, 4));
+      }
+    } catch (e) { console.warn('TasksScreen loadData:', e); }
+  }, [score, wantBonus]);
+
+  useFocusEffect(useCallback(() => { loadData(); }, [loadData]));
+  useEffect(() => { loadData(); }, []);
+
+  const handleComplete = async (task: DailyTask) => {
+    if (completedIds.has(task.id)) return;
+    try {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
+      await markTaskCompleted(task.id, task.xpReward);
+
+      // Animated XP popup
+      setXpPopup({ xp: task.xpReward, visible: true });
+      xpAnim.setValue(0);
+      Animated.sequence([
+        Animated.spring(xpAnim, { toValue: 1, useNativeDriver: true, tension: 200, friction: 12 }),
+        Animated.delay(1400),
+        Animated.timing(xpAnim, { toValue: 0, duration: 300, useNativeDriver: true }),
+      ]).start(() => setXpPopup(p => ({ ...p, visible: false })));
+
+      await loadData();
+    } catch (e) { console.warn('complete error:', e); }
+  };
+
+  const loadMoreBonus = () => {
+    const seen = new Set([...completedIds, ...bonusTasks.map(t => t.id)]);
+    setBonusTasks(getNextBonusTasks(seen, 4));
+    setBonusPage(p => p + 1);
+  };
+
+  const handleWantBonus = () => {
+    setWantBonus(true);
+    const seen = new Set(completedIds);
+    setBonusTasks(getNextBonusTasks(seen, 4));
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
+  };
+
+  const nav = (screen: string) => { try { navigation?.navigate(screen); } catch {} };
+
+  const todayXpDisplay = todayXp;
+
+  return (
+    <View style={s.root}>
+      <LinearGradient colors={['#080B14', '#0A0F20']} style={StyleSheet.absoluteFillObject} />
+
+      {/* XP popup — inlined, no separate component */}
+      {xpPopup.visible && (
+        <Animated.View style={[s.xpPop, {
+          opacity: xpAnim,
+          transform: [{ translateY: xpAnim.interpolate({ inputRange: [0, 1], outputRange: [20, 0] }) }],
+        }]}>
+          <Text style={s.xpPopCoin}>🪙</Text>
+          <Text style={s.xpPopTxt}>+{xpPopup.xp} XP</Text>
+          <Text style={s.xpPopStar}>✨</Text>
+        </Animated.View>
+      )}
+
+      {/* Level-up banner */}
+      {levelUp && (
+        <Animated.View style={[s.lvlBanner, {
+          opacity: lvlAnim,
+          transform: [{ scale: lvlAnim.interpolate({ inputRange: [0, 1], outputRange: [0.85, 1] }) }],
+        }]}>
+          <Text style={{ fontSize: 30 }}>🎊</Text>
+          <View>
+            <Text style={s.lvlTitle}>Level Up! 🎉</Text>
+            <Text style={s.lvlSub}>{levelUp}</Text>
+          </View>
+        </Animated.View>
+      )}
+
+      <SafeAreaView style={{ flex: 1 }} edges={['top']}>
+        <ScrollView contentContainerStyle={s.content} showsVerticalScrollIndicator={false}>
+
+          {/* Header */}
+          <View style={s.header}>
+            <View style={{ flex: 1 }}>
+              <Text style={s.title}>{isEng ? 'Daily Tasks' : 'Aaj ke Tasks'}</Text>
+              <Text style={s.sub}>
+                {doneCount}/{baseTasks.length} {isEng ? 'done' : 'complete'} · {isEng ? 'keep going!' : 'keep going!'}
+              </Text>
+            </View>
+            <TouchableOpacity onPress={() => nav('Emergency')} style={s.sosBtn}>
+              <Ionicons name="call" size={14} color={COLORS.danger} />
+              <Text style={s.sosTxt}>SOS</Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* XP Card */}
+          <XPCard
+            xp={stats.xp}
+            streak={stats.streak}
+            todayXp={todayXpDisplay}
+            calendar={calendar}
+          />
+
+          {/* Daily progress */}
+          <View style={s.progressCard}>
+            <View style={s.progressTop}>
+              <Text style={s.progressLabel}>{isEng ? "TODAY'S PROGRESS" : 'AAJ KI PROGRESS'}</Text>
+              <Text style={s.progressFrac}>{doneCount}/{baseTasks.length}</Text>
+            </View>
+            <View style={s.progressTrack}>
+              <View style={[s.progressFill, {
+                width: `${baseTasks.length > 0 ? (doneCount / baseTasks.length) * 100 : 0}%` as any,
+              }]} />
+            </View>
+            <View style={s.dotRow}>
+              {baseTasks.map(t => (
+                <View key={t.id} style={[s.dot, completedIds.has(t.id) && s.dotDone]} />
+              ))}
+            </View>
+          </View>
+
+          {/* Base tasks */}
+          <Text style={s.sectionLabel}>{isEng ? 'BASE TASKS' : 'BASE TASKS'}</Text>
+          {baseTasks.map(task => (
+            <TaskCard
+              key={task.id}
+              task={task}
+              completed={completedIds.has(task.id)}
+              onComplete={handleComplete}
+            />
+          ))}
+
+          {/* All done banner */}
+          {allBaseDone && (
+            <View style={s.allDone}>
+              <Text style={{ fontSize: 32 }}>🎉</Text>
+              <View style={{ flex: 1 }}>
+                <Text style={s.allDoneTitle}>
+                  {isEng ? 'All tasks done! Amazing!' : 'Sab ho gaya! Kya baat hai!'}
+                </Text>
+                <Text style={s.allDoneSub}>
+                  {isEng
+                    ? `You earned +${todayXpDisplay} XP today`
+                    : `Aaj ${todayXpDisplay} XP kamaye 💪`}
+                </Text>
+              </View>
+            </View>
+          )}
+
+          {/* ── BONUS TASKS SECTION ── */}
+          {allBaseDone && !wantBonus && (
+            <TouchableOpacity style={s.wantBonusBtn} onPress={handleWantBonus} activeOpacity={0.85}>
+              <LinearGradient colors={['#1E1B4B', '#312E81']} style={s.wantBonusGrad}>
+                <Text style={{ fontSize: 24 }}>⚡</Text>
+                <View style={{ flex: 1 }}>
+                  <Text style={s.wantBonusTitle}>
+                    {isEng ? 'Want bonus challenges?' : 'Aur challenges chahiye?'}
+                  </Text>
+                  <Text style={s.wantBonusSub}>
+                    {isEng ? 'Optional · Extra XP · Unlimited' : 'Optional · Extra XP · Unlimited'}
+                  </Text>
+                </View>
+                <View style={s.wantBonusArrow}>
+                  <Ionicons name="chevron-forward" size={18} color={COLORS.primary} />
+                </View>
+              </LinearGradient>
+            </TouchableOpacity>
+          )}
+
+          {allBaseDone && wantBonus && (
+            <>
+              <View style={s.bonusHeader}>
+                <View>
+                  <Text style={s.bonusTitle}>⚡ BONUS CHALLENGES</Text>
+                  <Text style={s.bonusSub}>{isEng ? 'Optional · Extra XP' : 'Optional · Extra XP'}</Text>
+                </View>
+                <TouchableOpacity style={s.refreshBtn} onPress={loadMoreBonus}>
+                  <Ionicons name="refresh" size={13} color={COLORS.primary} />
+                  <Text style={s.refreshTxt}>{isEng ? 'New set' : 'Naye'}</Text>
+                </TouchableOpacity>
+              </View>
+
+              {bonusTasks.map(task => (
+                <TaskCard
+                  key={task.id + bonusPage}
+                  task={task}
+                  completed={completedIds.has(task.id)}
+                  isBonus
+                  onComplete={handleComplete}
+                />
+              ))}
+
+              <TouchableOpacity style={s.moreBtn} onPress={loadMoreBonus}>
+                <Ionicons name="add-circle-outline" size={18} color={COLORS.primary} />
+                <Text style={s.moreTxt}>
+                  {isEng ? 'Load 4 more bonus tasks' : 'Aur 4 bonus tasks'}
+                </Text>
+              </TouchableOpacity>
+            </>
+          )}
+
+          <View style={{ height: 110 }} />
+        </ScrollView>
+      </SafeAreaView>
+
+      <EmergencyButton onPress={() => nav('Emergency')} />
+    </View>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Styles
+// ─────────────────────────────────────────────────────────────────────────────
+
+const s = StyleSheet.create({
+  root:    { flex: 1, backgroundColor: COLORS.background },
+  content: { paddingHorizontal: 18, paddingTop: 14 },
+
+  xpPop:    {
+    position: 'absolute', top: 90, alignSelf: 'center', zIndex: 999,
+    backgroundColor: '#4F46E5', paddingHorizontal: 24, paddingVertical: 12,
+    borderRadius: RADIUS.full, flexDirection: 'row', alignItems: 'center', gap: 6,
+    shadowColor: '#4F46E5', shadowOpacity: 0.9, shadowRadius: 20, elevation: 12,
   },
-  xpPopupText: { fontSize: 22, fontWeight: '900', color: '#fff' },
-
-  levelCard: { marginBottom: 12, borderRadius: RADIUS.xl, overflow: 'hidden' },
-  levelGradient: { padding: 20, borderRadius: RADIUS.xl, borderWidth: 1, borderColor: COLORS.border },
-  levelRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 },
-  levelTitle: { fontSize: 18, fontWeight: '800', color: COLORS.textPrimary },
-  xpText: { fontSize: 13, color: COLORS.textMuted, marginTop: 2 },
-  levelEmoji: { fontSize: 32 },
-  progressTrack: { height: 6, backgroundColor: COLORS.border, borderRadius: 3, overflow: 'hidden', marginBottom: 6 },
-  progressFill: { height: '100%', backgroundColor: COLORS.primary, borderRadius: 3 },
-  nextLevelText: { fontSize: 11, color: COLORS.textMuted },
-
-  todayProgress: {
-    flexDirection: 'row', alignItems: 'center', gap: 12,
-    backgroundColor: COLORS.surface, borderRadius: RADIUS.lg,
-    paddingHorizontal: 14, paddingVertical: 10, marginBottom: 16,
-    borderWidth: 1, borderColor: COLORS.border,
+  xpPopCoin: { fontSize: 18 },
+  xpPopTxt:  { color: '#fff', fontWeight: '900', fontSize: 18 },
+  xpPopStar: { fontSize: 16 },
+  lvlBanner: {
+    position: 'absolute', top: '38%', alignSelf: 'center', zIndex: 998,
+    flexDirection: 'row', alignItems: 'center', gap: 14,
+    backgroundColor: '#4F46E5', borderRadius: RADIUS.xl,
+    paddingHorizontal: 24, paddingVertical: 18,
+    shadowColor: '#4F46E5', shadowOpacity: 0.8, shadowRadius: 30,
   },
-  todayText: { fontSize: 12, color: COLORS.textSecondary, fontWeight: '600' },
-  todayBar: { flexDirection: 'row', gap: 5, flex: 1 },
-  todayDot: { width: 10, height: 10, borderRadius: 5, backgroundColor: COLORS.border, flex: 1 },
-  todayDotDone: { backgroundColor: COLORS.success },
+  lvlTitle: { fontSize: 17, fontWeight: '900', color: '#fff' },
+  lvlSub:   { fontSize: 13, color: 'rgba(255,255,255,0.8)', marginTop: 2 },
+
+  header:  { flexDirection: 'row', alignItems: 'center', marginBottom: 18, gap: 12 },
+  title:   { fontSize: 24, fontWeight: '900', color: COLORS.textPrimary },
+  sub:     { fontSize: 13, color: COLORS.textSecondary, marginTop: 2 },
+  sosBtn:  {
+    flexDirection: 'row', alignItems: 'center', gap: 5,
+    paddingHorizontal: 12, paddingVertical: 7, borderRadius: RADIUS.full,
+    borderWidth: 1.5, borderColor: COLORS.danger + '60', backgroundColor: COLORS.danger + '12',
+  },
+  sosTxt: { fontSize: 12, fontWeight: '800', color: COLORS.danger },
+
+  progressCard: {
+    backgroundColor: COLORS.surface, borderRadius: RADIUS.xl,
+    padding: 16, marginBottom: 16, borderWidth: 1, borderColor: COLORS.border,
+  },
+  progressTop:  { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 },
+  progressLabel:{ fontSize: 10, fontWeight: '700', letterSpacing: 1.5, color: COLORS.textMuted, textTransform: 'uppercase' },
+  progressFrac: { fontSize: 15, fontWeight: '800', color: COLORS.textPrimary },
+  progressTrack:{ height: 8, backgroundColor: COLORS.border, borderRadius: 4, overflow: 'hidden', marginBottom: 10 },
+  progressFill: { height: '100%', backgroundColor: COLORS.success, borderRadius: 4 },
+  dotRow:       { flexDirection: 'row', gap: 6, flexWrap: 'wrap' },
+  dot:          { width: 10, height: 10, borderRadius: 5, backgroundColor: COLORS.border },
+  dotDone:      { backgroundColor: COLORS.success },
 
   sectionLabel: {
-    fontSize: 11, fontWeight: '700', letterSpacing: 1.5,
+    fontSize: 10, fontWeight: '700', letterSpacing: 1.5,
     color: COLORS.textMuted, textTransform: 'uppercase', marginBottom: 10,
   },
 
-  taskCard: { marginBottom: 10, borderRadius: RADIUS.xl, overflow: 'hidden' },
-  taskGradient: {
-    flexDirection: 'row', alignItems: 'center', padding: 14,
-    borderRadius: RADIUS.xl, borderWidth: 1, borderColor: COLORS.border, gap: 12,
+  allDone: {
+    flexDirection: 'row', alignItems: 'center', gap: 14,
+    backgroundColor: COLORS.success + '15', borderRadius: RADIUS.xl,
+    padding: 18, marginVertical: 12, borderWidth: 1, borderColor: COLORS.success + '35',
   },
-  taskCompleted: { opacity: 0.55 },
-  taskIconWrap: { width: 48, height: 48, borderRadius: 14, justifyContent: 'center', alignItems: 'center' },
-  taskBody: { flex: 1 },
-  taskTitle: { fontSize: 15, fontWeight: '700', color: COLORS.textPrimary, marginBottom: 3 },
-  taskTitleDone: { textDecorationLine: 'line-through', color: COLORS.textMuted },
-  taskDesc: { fontSize: 12, color: COLORS.textSecondary, lineHeight: 17, marginBottom: 7 },
-  taskMeta: { flexDirection: 'row', gap: 8, alignItems: 'center' },
-  categoryChip: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: RADIUS.full, borderWidth: 1 },
-  categoryText: { fontSize: 10, fontWeight: '600', textTransform: 'capitalize' },
-  taskDuration: { fontSize: 11, color: COLORS.textMuted },
-  taskXP: { fontSize: 11, fontWeight: '700', color: COLORS.warning },
+  allDoneTitle: { fontSize: 16, fontWeight: '800', color: COLORS.success },
+  allDoneSub:   { fontSize: 12, color: COLORS.textSecondary, marginTop: 3 },
 
-  completeBtn: {
-    width: 44, height: 44, borderRadius: 12,
-    justifyContent: 'center', alignItems: 'center',
+  wantBonusBtn: { borderRadius: RADIUS.xl, overflow: 'hidden', marginBottom: 14 },
+  wantBonusGrad:{
+    padding: 18, borderRadius: RADIUS.xl, flexDirection: 'row', alignItems: 'center', gap: 14,
+    borderWidth: 1, borderColor: 'rgba(99,102,241,0.4)',
   },
-  completeBtnDone: {},
-  completeBtnInner: {
-    width: 36, height: 36, borderRadius: 10,
-    borderWidth: 2, borderColor: COLORS.primary,
-    justifyContent: 'center', alignItems: 'center',
-    backgroundColor: COLORS.primaryGlow,
+  wantBonusTitle: { fontSize: 15, fontWeight: '800', color: COLORS.textPrimary },
+  wantBonusSub:   { fontSize: 11, color: COLORS.textMuted, marginTop: 2 },
+  wantBonusArrow: {
+    width: 32, height: 32, borderRadius: 16,
+    backgroundColor: COLORS.primary + '20', justifyContent: 'center', alignItems: 'center',
   },
 
-  streakCard: { marginTop: 8, borderRadius: RADIUS.xl, overflow: 'hidden' },
-  streakGradient: {
-    flexDirection: 'row', alignItems: 'center', gap: 14, padding: 18,
-    borderRadius: RADIUS.xl, borderWidth: 1, borderColor: COLORS.border,
+  bonusHeader:  {
+    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
+    marginBottom: 12, marginTop: 4,
   },
-  streakEmoji: { fontSize: 32 },
-  streakCount: { fontSize: 16, fontWeight: '800', color: COLORS.textPrimary },
-  streakSub: { fontSize: 12, color: COLORS.textSecondary, marginTop: 2 },
+  bonusTitle: { fontSize: 12, fontWeight: '800', color: '#A78BFA', letterSpacing: 1 },
+  bonusSub:   { fontSize: 11, color: COLORS.textMuted, marginTop: 2 },
+  refreshBtn: {
+    flexDirection: 'row', alignItems: 'center', gap: 5,
+    paddingHorizontal: 12, paddingVertical: 6, borderRadius: RADIUS.full,
+    borderWidth: 1, borderColor: COLORS.primary + '50', backgroundColor: COLORS.primary + '12',
+  },
+  refreshTxt: { fontSize: 11, fontWeight: '700', color: COLORS.primary },
+  moreBtn: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
+    padding: 16, backgroundColor: COLORS.primary + '12', borderRadius: RADIUS.xl,
+    marginTop: 8, borderWidth: 1, borderColor: COLORS.primary + '30',
+  },
+  moreTxt: { fontSize: 13, fontWeight: '700', color: COLORS.primary },
+});
+
+const xpS = StyleSheet.create({
+  card:       { marginBottom: 16, borderRadius: RADIUS.xl, overflow: 'hidden' },
+  grad:       { padding: 20, borderRadius: RADIUS.xl, borderWidth: 1, borderColor: 'rgba(99,102,241,0.3)' },
+  glowOrb:    { position: 'absolute', top: -30, right: -30, width: 120, height: 120, borderRadius: 60, backgroundColor: 'rgba(99,102,241,0.08)' },
+  badgeRow:   { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 6 },
+  badge:      { alignSelf: 'flex-start', backgroundColor: COLORS.primary, paddingHorizontal: 10, paddingVertical: 4, borderRadius: RADIUS.full },
+  badgeTxt:   { fontSize: 11, fontWeight: '900', color: '#fff', letterSpacing: 1 },
+  streakBadge:{ flexDirection: 'row', alignItems: 'center', gap: 3, backgroundColor: COLORS.warning + '20', paddingHorizontal: 8, paddingVertical: 3, borderRadius: RADIUS.full },
+  streakBadgeTxt: { fontSize: 10, fontWeight: '800', color: COLORS.warning },
+  levelName:  { fontSize: 18, fontWeight: '800', color: COLORS.textPrimary },
+  xpRow:      { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 4, flexWrap: 'wrap' },
+  xpCount:    { fontSize: 12, color: COLORS.textMuted },
+  todayPill:  { backgroundColor: '#4F46E5' + '30', paddingHorizontal: 8, paddingVertical: 2, borderRadius: RADIUS.full, borderWidth: 1, borderColor: COLORS.primary + '40' },
+  todayTxt:   { fontSize: 10, fontWeight: '800', color: COLORS.primary },
+  topRow:     { flexDirection: 'row', alignItems: 'flex-start', marginBottom: 16 },
+  emojiCircle:{ width: 54, height: 54, borderRadius: 27, backgroundColor: 'rgba(99,102,241,0.15)', borderWidth: 1, borderColor: 'rgba(99,102,241,0.3)', justifyContent: 'center', alignItems: 'center' },
+  barTrack:   { height: 10, backgroundColor: 'rgba(255,255,255,0.08)', borderRadius: 5, overflow: 'visible', position: 'relative' },
+  barFill:    { height: '100%', borderRadius: 5, backgroundColor: COLORS.primary, shadowColor: COLORS.primary, shadowOpacity: 0.8, shadowRadius: 6 },
+  tick:       { position: 'absolute', top: -3, width: 2, height: 16, backgroundColor: 'rgba(255,255,255,0.25)', borderRadius: 1 },
+  barLabel:   { fontSize: 10, color: COLORS.textMuted },
+  divider:    { height: 1, backgroundColor: 'rgba(255,255,255,0.08)', marginVertical: 12 },
+  calTitle:   { fontSize: 9, fontWeight: '700', letterSpacing: 1.5, color: COLORS.textMuted, textTransform: 'uppercase', marginBottom: 8 },
+});
+
+const cal = StyleSheet.create({
+  row:     { flexDirection: 'row', justifyContent: 'space-between' },
+  cell:    { alignItems: 'center', gap: 4 },
+  dot:     {
+    width: 28, height: 28, borderRadius: 14,
+    backgroundColor: 'rgba(255,255,255,0.05)',
+    borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)',
+    justifyContent: 'center', alignItems: 'center',
+  },
+  dotDone:  { backgroundColor: COLORS.success + '30', borderColor: COLORS.success + '60' },
+  dotToday: { borderColor: COLORS.primary, borderWidth: 2 },
+  label:    { fontSize: 9, color: COLORS.textMuted, fontWeight: '600' },
+});
+
+const tc = StyleSheet.create({
+  card:        { borderRadius: RADIUS.xl, padding: 16, borderWidth: 1, borderColor: COLORS.border, overflow: 'hidden' },
+  cardDone:    { borderColor: COLORS.success + '30', opacity: 0.75 },
+  cardConfirm: { borderColor: '#7C3AED', borderWidth: 2 },
+  confirmTrack:{ position: 'absolute', top: 0, left: 0, right: 0, height: 3, backgroundColor: 'rgba(255,255,255,0.05)' },
+  confirmFill: { height: '100%', backgroundColor: COLORS.success + 'CC', borderRadius: 2 },
+  bonusBadge:  { alignSelf: 'flex-start', backgroundColor: '#7C3AED22', paddingHorizontal: 8, paddingVertical: 3, borderRadius: RADIUS.full, marginBottom: 8 },
+  bonusBadgeTxt:{ fontSize: 9, fontWeight: '800', color: '#A78BFA', letterSpacing: 1 },
+  top:         { flexDirection: 'row', alignItems: 'flex-start', gap: 12 },
+  iconBox:     { width: 44, height: 44, borderRadius: 12, justifyContent: 'center', alignItems: 'center' },
+  title:       { fontSize: 14, fontWeight: '700', color: COLORS.textPrimary, marginBottom: 3 },
+  titleDone:   { textDecorationLine: 'line-through', color: COLORS.textMuted },
+  desc:        { fontSize: 11, color: COLORS.textSecondary, marginBottom: 6 },
+  metaRow:     { flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap' },
+  xpPill:      { paddingHorizontal: 7, paddingVertical: 3, borderRadius: RADIUS.full },
+  xpTxt:       { fontSize: 10, fontWeight: '800' },
+  dur:         { fontSize: 10, color: COLORS.textMuted },
+  catPill:     { paddingHorizontal: 7, paddingVertical: 3, borderRadius: RADIUS.full },
+  catTxt:      { fontSize: 9, fontWeight: '700', textTransform: 'capitalize' },
+  actionRow:   { flexDirection: 'row', gap: 8, marginTop: 12, alignItems: 'center' },
+  doneBtn:     {
+    flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
+    gap: 6, paddingVertical: 10, borderRadius: RADIUS.lg, borderWidth: 1.5,
+  },
+  doneTxt:     { fontSize: 13, fontWeight: '700' },
+  confirmBtn:  {
+    flex: 2, flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
+    gap: 6, paddingVertical: 10, borderRadius: RADIUS.lg,
+  },
+  confirmTxt:  { fontSize: 13, fontWeight: '800', color: '#fff' },
+  cancelBtn:   {
+    flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
+    gap: 4, paddingVertical: 10, borderRadius: RADIUS.lg,
+    backgroundColor: COLORS.surface, borderWidth: 1, borderColor: COLORS.border,
+  },
+  cancelTxt:   { fontSize: 12, color: COLORS.textMuted, fontWeight: '600' },
+  doneStrip:   {
+    flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 10,
+    paddingTop: 10, borderTopWidth: 1, borderTopColor: COLORS.success + '25',
+  },
+  doneStripTxt: { fontSize: 11, color: COLORS.success, fontWeight: '600' },
 });

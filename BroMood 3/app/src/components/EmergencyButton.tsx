@@ -1,48 +1,53 @@
-/**
- * EmergencyButton — cleaner SOS button
- * Positioned above bottom tab bar, left side to avoid conflicts
- */
 import React, { useRef, useEffect } from 'react';
 import { TouchableOpacity, StyleSheet, Animated, View, Text } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useNavigation } from '@react-navigation/native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { COLORS, RADIUS } from '../constants/theme';
 import { useMoodStore } from '../store/moodStore';
 
-export default function EmergencyButton() {
-  const navigation = useNavigation<any>();
+interface EmergencyButtonProps {
+  onPress: () => void;
+}
+
+export default function EmergencyButton(props: EmergencyButtonProps) {
+  const { onPress } = props;
+  const insets = useSafeAreaInsets();
   const { currentSnapshot } = useMoodStore();
   const score = currentSnapshot?.score ?? 5;
-  const pulse = useRef(new Animated.Value(1)).current;
   const isCritical = score < 3;
+  const pulse = useRef(new Animated.Value(1)).current;
+  const loopRef = useRef<Animated.CompositeAnimation | null>(null);
 
   useEffect(() => {
-    // Only pulse when mood is critical
     if (isCritical) {
-      Animated.loop(
+      loopRef.current = Animated.loop(
         Animated.sequence([
-          Animated.timing(pulse, { toValue: 1.2, duration: 700, useNativeDriver: true }),
-          Animated.timing(pulse, { toValue: 1, duration: 700, useNativeDriver: true }),
+          Animated.timing(pulse, { toValue: 1.5, duration: 800, useNativeDriver: true }),
+          Animated.timing(pulse, { toValue: 1, duration: 800, useNativeDriver: true }),
         ])
-      ).start();
+      );
+      loopRef.current.start();
     } else {
-      pulse.setValue(1);
+      loopRef.current?.stop();
+      Animated.timing(pulse, { toValue: 1, duration: 200, useNativeDriver: true }).start();
     }
+    return () => { loopRef.current?.stop(); };
   }, [isCritical]);
 
+  const bottom = insets.bottom + 78 + 14;
+
   return (
-    <View style={styles.wrapper} pointerEvents="box-none">
-      {/* Pulse ring — only visible when critical */}
+    <View style={[styles.wrapper, { bottom }]} pointerEvents="box-none">
       {isCritical && (
-        <Animated.View style={[styles.pulseRing, { transform: [{ scale: pulse }] }]} />
+        <Animated.View style={[styles.glow, { transform: [{ scale: pulse }] }]} />
       )}
       <TouchableOpacity
         style={[styles.fab, isCritical && styles.fabCritical]}
-        onPress={() => navigation.navigate('Emergency')}
+        onPress={onPress}
         activeOpacity={0.85}
       >
-        <Ionicons name="call" size={18} color="#fff" />
-        <Text style={styles.fabLabel}>SOS</Text>
+        <Ionicons name="call" size={15} color="#fff" />
+        <Text style={styles.label}>SOS</Text>
       </TouchableOpacity>
     </View>
   );
@@ -51,39 +56,39 @@ export default function EmergencyButton() {
 const styles = StyleSheet.create({
   wrapper: {
     position: 'absolute',
-    bottom: 96,     // sits just above bottom tab bar
     right: 16,
+    zIndex: 9999,
     alignItems: 'center',
-    justifyContent: 'center',
-    zIndex: 998,
   },
-  pulseRing: {
+  glow: {
     position: 'absolute',
-    width: 56, height: 56, borderRadius: 28,
+    width: 64,
+    height: 64,
+    borderRadius: 32,
     backgroundColor: COLORS.danger + '35',
   },
   fab: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 5,
+    gap: 6,
     paddingHorizontal: 14,
     paddingVertical: 10,
     borderRadius: RADIUS.full,
     backgroundColor: COLORS.danger,
     shadowColor: COLORS.danger,
-    shadowOffset: { width: 0, height: 3 },
+    shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.45,
-    shadowRadius: 8,
+    shadowRadius: 10,
     elevation: 8,
   },
   fabCritical: {
-    backgroundColor: COLORS.danger,
-    shadowOpacity: 0.65,
+    shadowOpacity: 0.8,
+    shadowRadius: 16,
   },
-  fabLabel: {
+  label: {
     color: '#fff',
     fontSize: 12,
-    fontWeight: '800',
-    letterSpacing: 0.5,
+    fontWeight: '900',
+    letterSpacing: 1.5,
   },
 });
