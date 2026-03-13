@@ -44,8 +44,8 @@ export const useChatStore = create<ChatStore>((set, get) => ({
       id: m.id,
       role: m.role,
       content: m.content,
-      timestamp: m.sent_at,
-      urgencyFlag: m.urgency_flag === 1,
+      timestamp: m.created_at,   // ChatMessage uses created_at, not sent_at
+      urgencyFlag: false,         // urgency_flag not stored in DB; default false on load
     }));
     set({ messages });
   },
@@ -71,13 +71,7 @@ export const useChatStore = create<ChatStore>((set, get) => ({
     set(s => ({ messages: [...s.messages, userMsg], isTyping: true }));
 
     // Persist user message
-    await insertChatMessage({
-      role: 'user',
-      content,
-      chat_mode: chatMode,
-      urgency_flag: 0,
-      sent_at: userMsg.timestamp,
-    });
+    await insertChatMessage('user', content, chatMode);
 
     try {
       // Build message history for API (last 10 messages for context)
@@ -108,13 +102,7 @@ export const useChatStore = create<ChatStore>((set, get) => ({
       }));
 
       // Persist AI response
-      await insertChatMessage({
-        role: 'assistant',
-        content: response.message,
-        chat_mode: chatMode,
-        urgency_flag: response.urgency_flag ? 1 : 0,
-        sent_at: assistantMsg.timestamp,
-      });
+      await insertChatMessage('assistant', response.message, chatMode);
 
       // If urgency detected, update mood store
       if (response.urgency_flag) {

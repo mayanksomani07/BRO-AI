@@ -1,11 +1,52 @@
 {
+  "onboarding": { "language_question": "আপনি কোন ভাষায় স্বাচ্ছন্দ্য বোধ করেন?", "consent_title": "আপনার ডেটা, আপনার গোপনীয়তা", "consent_body": "আমরা শুধুমাত্র আপনাকে সহায়তা করতে ডেটা সংগ্রহ করি। এটি কখনও বিক্রি হবে না।", "let_s_go": "চলুন শুরু করি" },
   "home": {
-    "mood_label": "Mood",
-    "greeting_morning": "Good morning, {{name}}! ☀️",
-    "greeting_afternoon": "Hey {{name}}! 👋",
-    "greeting_night": "{{name}} 🌙",
-    "chat_cta": "Bro_AI"
+    "mood_label": "আজকের মেজাজ", "greeting_morning": "শুভ সকাল, {{name}}! ☀️",
+    "greeting_afternoon": "হ্যালো {{name}}! 👋", "greeting_night": "রাত্রির সময়, {{name}} 🌙",
+    "greeting_sub": "আজ কেমন আছেন?",
+    "chat_cta": "Bro_AI এর সাথে কথা বলো", "tasks_title": "আজকের কাজ",
+    "tasks_done": "সম্পন্ন", "streak": "দিন streak", "see_all": "সব দেখো",
+    "all_done": "সব শেষ হয়ে গেছে!", "want_more": "আরও চ্যালেঞ্জ চাই?", "more": "আরও লোড করো",
+    "seven_day": "৭ দিনের মেজাজ", "quick_access": "দ্রুত অ্যাক্সেস",
+    "signals_today": "আজকের সংকেত থেকে",
+    "mood_very_low": "মেজাজ খুব কম — এখনই সাহায্য নিন",
+    "journal_sub": "লিখে রাখো", "music_sub": "শান্ত হও",
+    "therapist_label": "থেরাপিস্ট খুঁজুন", "therapist_sub": "সত্যিকারের সাহায্য",
+    "settings_sub": "ভাষা", "bro_ai_sub": "কথা বলো"
   },
-  "chat": { "vent_mode": "Listen", "advice_mode": "Advise", "listen_mode": "Understand", "placeholder": "Type..." },
-  "emergency": { "title": "You are not alone.", "sub": "Help is available now, free." }
+  "tasks": {
+    "title": "আজকের চ্যালেঞ্জ", "your_tasks": "বেস টাস্ক", "today": "আজ", "complete": "সম্পন্ন",
+    "done_today": "আজ সম্পন্ন", "keep_going": "এগিয়ে যাও!",
+    "progress": "আজকের অগ্রগতি",
+    "all_done_title": "সব শেষ! অসাধারণ!",
+    "all_done_sub": "আজ {{xp}} XP অর্জন করেছ 💪",
+    "want_bonus": "আরও চ্যালেঞ্জ চাই?",
+    "bonus_subtitle": "ঐচ্ছিক · অতিরিক্ত XP · সীমাহীন",
+    "bonus_label": "বোনাস চ্যালেঞ্জ",
+    "bonus_sub": "ঐচ্ছিক · অতিরিক্ত XP",
+    "new_set": "নতুন সেট",
+    "load_more": "আরও ৪টি বোনাস টাস্ক",
+    "base_label": "বেস টাস্ক"
+  },
+  "chat": { "vent_mode": "শুধু শোনো", "advice_mode": "পরামর্শ দাও", "listen_mode": "বোঝো", "placeholder": "কিছু লিখুন..." },
+  "journal": { "title": "জার্নাল", "write": "লিখুন", "placeholder": "আজ কী চলছে? স্বাধীনভাবে লিখুন...", "empty_title": "জার্নাল এখন খালি" },
+  "emergency": { "title": "তুমি একা নও।", "sub": "এখনই বিনামূল্যে সাহায্য পাওয়া যাচ্ছে।" },
+  "music": { "title": "সঙ্গীত ও শ্বাস", "ambient": "পরিবেশ শব্দ", "breathing": "শ্বাস ব্যায়াম" },
+  "therapist": { "title": "থেরাপিস্ট খুঁজুন", "search": "নাম বা ভাষা দিয়ে খুঁজুন...", "results": "থেরাপিস্ট পাওয়া গেছে", "book": "সেশন বুক করুন", "free_contact": "বিনামূল্যে যোগাযোগ করুন" },
+  "settings": {
+    "title": "সেটিংস", "language": "ভাষা", "app_language": "অ্যাপের ভাষা",
+    "profile": "প্রোফাইল", "member": "BroMood সদস্য",
+    "privacy": "গোপনীয়তা ও ডেটা",
+    "keyboard_label": "কীবোর্ড ডেটা সংগ্রহ", "keyboard_sub": "শুধু মেটাডেটা — টেক্সট নয়",
+    "healthkit_label": "HealthKit ঘুম সিঙ্ক", "healthkit_sub": "ঘুমের ডেটা থেকে মেজাজ শনাক্ত",
+    "cloud_label": "ক্লাউড ব্যাকআপ", "cloud_sub": "শুধু বেনামী ট্রেন্ড",
+    "your_data": "তোমার ডেটা", "export": "ডেটা রপ্তানি করো", "delete": "সব মুছে দাও",
+    "setup": "সেটআপ",
+    "keyboard_setup_title": "BroMood কীবোর্ড সক্রিয় করুন",
+    "keyboard_setup_sub": "Settings → General → Keyboard → Keyboards → Add New Keyboard",
+    "disclaimer": "এই অ্যাপ ডাক্তার নয়। শুধু বন্ধুর মতো সহায়তা করে।",
+    "delete_title": "সব ডেটা মুছবেন?",
+    "delete_body": "এটি সমস্ত মুড লগ, জার্নাল ও চ্যাট ইতিহাস স্থায়ীভাবে মুছে দেবে।",
+    "cancel": "বাতিল", "confirm_delete": "সব মুছে দাও"
+  }
 }

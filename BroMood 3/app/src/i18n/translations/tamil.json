@@ -1,11 +1,52 @@
 {
+  "onboarding": { "language_question": "நீங்கள் எந்த மொழியில் வசதியாக உள்ளீர்கள்?", "consent_title": "உங்கள் தரவு, உங்கள் தனியுரிமை", "consent_body": "உங்களை ஆதரிக்க மட்டுமே நாங்கள் தரவு சேகரிக்கிறோம். இது ஒருபோதும் விற்கப்படாது.", "let_s_go": "தொடங்குவோம்" },
   "home": {
-    "mood_label": "Mood",
-    "greeting_morning": "Good morning, {{name}}! ☀️",
-    "greeting_afternoon": "Hey {{name}}! 👋",
-    "greeting_night": "{{name}} 🌙",
-    "chat_cta": "Bro_AI"
+    "mood_label": "இன்றைய மனநிலை", "greeting_morning": "காலை வணக்கம், {{name}}! ☀️",
+    "greeting_afternoon": "வணக்கம் {{name}}! 👋", "greeting_night": "இரவு நேரம், {{name}} 🌙",
+    "greeting_sub": "இன்று எப்படி இருக்கிறீர்கள்?",
+    "chat_cta": "Bro_AI உடன் பேசுங்கள்", "tasks_title": "இன்றைய பணிகள்",
+    "tasks_done": "முடிந்தது", "streak": "நாள் streak", "see_all": "அனைத்தும் பார்க்க",
+    "all_done": "அனைத்தும் முடிந்தது!", "want_more": "இன்னும் வேண்டுமா?", "more": "மேலும் ஏற்று",
+    "seven_day": "7 நாள் மனநிலை", "quick_access": "விரைவு அணுகல்",
+    "signals_today": "இன்றைய சமிக்ஞைகளின் அடிப்படையில்",
+    "mood_very_low": "மனநிலை மிகவும் குறைவு — இப்போதே உதவி பெறுங்கள்",
+    "journal_sub": "எழுதி வையுங்கள்", "music_sub": "அமைதியாகுங்கள்",
+    "therapist_label": "சிகிச்சையாளர் கண்டுபிடி", "therapist_sub": "உண்மையான உதவி",
+    "settings_sub": "மொழி", "bro_ai_sub": "பேசுங்கள்"
   },
-  "chat": { "vent_mode": "Listen", "advice_mode": "Advise", "listen_mode": "Understand", "placeholder": "Type..." },
-  "emergency": { "title": "You are not alone.", "sub": "Help is available now, free." }
+  "tasks": {
+    "title": "இன்றைய சவால்கள்", "your_tasks": "பேஸ் டாஸ்க்", "today": "இன்று", "complete": "முடிந்தது",
+    "done_today": "இன்று முடிந்தது", "keep_going": "தொடர்ந்து போங்கள்!",
+    "progress": "இன்றைய முன்னேற்றம்",
+    "all_done_title": "அனைத்தும் முடிந்தது! அருமை!",
+    "all_done_sub": "இன்று {{xp}} XP சம்பாதித்தீர்கள் 💪",
+    "want_bonus": "கூடுதல் சவால்கள் வேண்டுமா?",
+    "bonus_subtitle": "விருப்பத்தேர்வு · கூடுதல் XP · வரம்பற்றது",
+    "bonus_label": "போனஸ் சவால்கள்",
+    "bonus_sub": "விருப்பத்தேர்வு · கூடுதல் XP",
+    "new_set": "புதிய தொகுப்பு",
+    "load_more": "4 கூடுதல் போனஸ் பணிகள்",
+    "base_label": "பேஸ் டாஸ்க்"
+  },
+  "chat": { "vent_mode": "கேளுங்கள்", "advice_mode": "ஆலோசனை", "listen_mode": "புரிந்துகொள்", "placeholder": "தட்டச்சு செய்யுங்கள்..." },
+  "journal": { "title": "இதழ்", "write": "எழுதுங்கள்", "placeholder": "இன்று என்ன நடக்கிறது? சுதந்திரமாக எழுதுங்கள்...", "empty_title": "இதழ் இப்போது காலியாக உள்ளது" },
+  "emergency": { "title": "நீங்கள் தனியில்லை.", "sub": "இப்போது இலவச உதவி கிடைக்கிறது." },
+  "music": { "title": "இசை & சுவாசம்", "ambient": "சூழல் ஒலிகள்", "breathing": "சுவாச பயிற்சிகள்" },
+  "therapist": { "title": "சிகிச்சையாளரை கண்டுபிடிக்கவும்", "search": "பெயர் அல்லது மொழியால் தேடுங்கள்...", "results": "சிகிச்சையாளர்கள் கண்டுபிடிக்கப்பட்டனர்", "book": "அமர்வை பதிவு செய்யுங்கள்", "free_contact": "இலவசமாக தொடர்பு கொள்ளுங்கள்" },
+  "settings": {
+    "title": "அமைப்புகள்", "language": "மொழி", "app_language": "செயலி மொழி",
+    "profile": "சுயவிவரம்", "member": "BroMood உறுப்பினர்",
+    "privacy": "தனியுரிமை & தரவு",
+    "keyboard_label": "விசைப்பலகை தரவு சேகரிப்பு", "keyboard_sub": "மெட்டாடேட்டா மட்டுமே — உரை இல்லை",
+    "healthkit_label": "HealthKit தூக்க ஒத்திசைவு", "healthkit_sub": "தூக்க தரவில் இருந்து மனநிலை",
+    "cloud_label": "கிளவுட் காப்புப்பிரதி", "cloud_sub": "அநாமதேய போக்குகள் மட்டும்",
+    "your_data": "உங்கள் தரவு", "export": "தரவு ஏற்றுமதி", "delete": "அனைத்தும் நீக்கு",
+    "setup": "அமைவு",
+    "keyboard_setup_title": "BroMood விசைப்பலகை இயக்கு",
+    "keyboard_setup_sub": "Settings → General → Keyboard → Keyboards → Add New Keyboard",
+    "disclaimer": "இந்த செயலி மருத்துவர் இல்லை. நண்பனைப் போல் ஆதரிக்கிறது.",
+    "delete_title": "அனைத்து தரவையும் நீக்கவா?",
+    "delete_body": "அனைத்து மனநிலை பதிவுகள், இதழ் மற்றும் அரட்டை வரலாறு நிரந்தரமாக நீக்கப்படும்.",
+    "cancel": "ரத்து", "confirm_delete": "அனைத்தும் நீக்கு"
+  }
 }

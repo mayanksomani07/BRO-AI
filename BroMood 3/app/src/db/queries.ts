@@ -245,14 +245,25 @@ export interface JournalEntry {
   id: string;
   content_encrypted: string;
   sentiment: string | null;
+  detected_themes: string | null;
+  mood_score_at_time: number | null;
   created_at: number;
 }
 
-export async function insertJournalEntry(content: string, sentiment?: string): Promise<void> {
+export interface InsertJournalEntryArgs {
+  content_encrypted: string;
+  sentiment: string | null;
+  detected_themes: string | null;
+  mood_score_at_time: number | null;
+  created_at: number;
+}
+
+export async function insertJournalEntry(args: InsertJournalEntryArgs): Promise<void> {
   const id = Crypto.randomUUID();
   await execute(
-    `INSERT INTO journal_entries (id, content_encrypted, sentiment, created_at) VALUES (?, ?, ?, ?)`,
-    [id, content, sentiment ?? null, Date.now()]
+    `INSERT INTO journal_entries (id, content_encrypted, sentiment, detected_themes, mood_score_at_time, created_at)
+     VALUES (?, ?, ?, ?, ?, ?)`,
+    [id, args.content_encrypted, args.sentiment, args.detected_themes, args.mood_score_at_time, args.created_at]
   );
 }
 
@@ -261,6 +272,10 @@ export async function getJournalEntries(limit = 20): Promise<JournalEntry[]> {
     `SELECT * FROM journal_entries ORDER BY created_at DESC LIMIT ?`,
     [limit]
   );
+}
+
+export async function deleteJournalEntry(id: string): Promise<void> {
+  await execute(`DELETE FROM journal_entries WHERE id = ?`, [id]);
 }
 
 // ── Chat Messages ─────────────────────────────────────────────────────────────
@@ -300,3 +315,34 @@ export async function resetAllData(): Promise<void> {
     { sql: `UPDATE user_stats SET total_xp = 0, current_level = 'Naya Bro', streak_days = 0, badges = '[]' WHERE id = ?`, args: ['singleton'] },
   ]);
 }
+
+/** Alias kept for compatibility with SettingsScreen */
+export const wipeAllData = resetAllData;
+
+/** Export all data as a plain object for sharing */
+export async function exportAllData(): Promise<Record<string, unknown[]>> {
+  const [moods, tasks, journal, chat] = await Promise.all([
+    queryAll('SELECT * FROM mood_logs ORDER BY logged_at DESC'),
+    queryAll('SELECT * FROM task_progress ORDER BY completed_at DESC'),
+    queryAll('SELECT * FROM journal_entries ORDER BY created_at DESC'),
+    queryAll('SELECT * FROM chat_messages ORDER BY created_at ASC'),
+  ]);
+  return { mood_logs: moods, task_progress: tasks, journal_entries: journal, chat_messages: chat };
+}
+
+/** Clear only chat messages */
+export async function clearChatHistory(): Promise<void> {
+  await execute(`DELETE FROM chat_messages`);
+}
+
+/** Get the most recent notification_log row for a given context_type */
+export async function getLastNotificationForContext(contextType: string): Promise<{ sent_at: number } | null> {
+  const rows = await queryAll<{ sent_at: number }>(
+    `SELECT sent_at FROM notification_log WHERE context_type = ? ORDER BY sent_at DESC LIMIT 1`,
+    [contextType]
+  );
+  return rows[0] ?? null;
+}
+
+/** Alias: logNotification → logNotificationSent (keeps TriggerEngine compiling) */
+export const logNotification = logNotificationSent;

@@ -1,11 +1,52 @@
 {
+  "onboarding": { "language_question": "तुम किस भाषा में सहज हो?", "consent_title": "तुम्हारा डेटा, तुम्हारी प्राइवेसी", "consent_body": "हम केवल तुम्हारी मदद के लिए डेटा लेते हैं। यह कभी नहीं बेचा जाएगा।", "let_s_go": "चलो शुरू करें" },
   "home": {
-    "mood_label": "Mood",
-    "greeting_morning": "Good morning, {{name}}! ☀️",
-    "greeting_afternoon": "Hey {{name}}! 👋",
-    "greeting_night": "{{name}} 🌙",
-    "chat_cta": "Bro_AI"
+    "mood_label": "आज का मूड", "greeting_morning": "सुप्रभात, {{name}}! ☀️",
+    "greeting_afternoon": "कैसे हो, {{name}}? 👋", "greeting_night": "रात का समय है, {{name}} 🌙",
+    "greeting_sub": "आज कैसा महसूस हो रहा है?",
+    "chat_cta": "Bro_AI से बात करो", "tasks_title": "आज के कार्य",
+    "tasks_done": "पूर्ण", "streak": "दिन streak", "see_all": "सब देखो",
+    "all_done": "सब हो गया!", "want_more": "और काम चाहिए?", "more": "और लो",
+    "seven_day": "7 दिन का मूड", "quick_access": "त्वरित पहुँच",
+    "signals_today": "आज के संकेतों से पता चला",
+    "mood_very_low": "मूड बहुत कम है — अभी मदद लो",
+    "journal_sub": "लिख डालो", "music_sub": "शांत रहो",
+    "therapist_label": "थेरेपिस्ट खोजें", "therapist_sub": "असली मदद",
+    "settings_sub": "भाषा", "bro_ai_sub": "बात करो"
   },
-  "chat": { "vent_mode": "Listen", "advice_mode": "Advise", "listen_mode": "Understand", "placeholder": "Type..." },
-  "emergency": { "title": "You are not alone.", "sub": "Help is available now, free." }
+  "tasks": {
+    "title": "आज की चुनौतियाँ", "your_tasks": "बेस टास्क", "today": "आज", "complete": "पूर्ण",
+    "done_today": "आज पूर्ण", "keep_going": "जारी रखो!",
+    "progress": "आज की प्रगति",
+    "all_done_title": "सब हो गया! शानदार!",
+    "all_done_sub": "आज {{xp}} XP कमाए 💪",
+    "want_bonus": "और चुनौतियाँ चाहिए?",
+    "bonus_subtitle": "वैकल्पिक · अतिरिक्त XP · असीमित",
+    "bonus_label": "बोनस चुनौतियाँ",
+    "bonus_sub": "वैकल्पिक · अतिरिक्त XP",
+    "new_set": "नए",
+    "load_more": "4 और बोनस टास्क",
+    "base_label": "बेस टास्क"
+  },
+  "chat": { "vent_mode": "बस सुनो", "advice_mode": "सलाह दो", "listen_mode": "समझो", "placeholder": "कुछ भी लिखो..." },
+  "journal": { "title": "जर्नल", "write": "लिखो", "placeholder": "आज क्या चल रहा है? खुलकर लिखो...", "empty_title": "जर्नल अभी खाली है" },
+  "emergency": { "title": "तुम अकेले नहीं हो।", "sub": "ये लोग अभी सुनने के लिए उपलब्ध हैं — बिल्कुल मुफ्त।" },
+  "music": { "title": "संगीत और श्वास", "ambient": "परिवेश ध्वनियाँ", "breathing": "श्वास व्यायाम" },
+  "therapist": { "title": "थेरेपिस्ट खोजें", "search": "नाम या भाषा से खोजें...", "results": "थेरेपिस्ट मिले", "book": "सेशन बुक करें", "free_contact": "मुफ्त में जुड़ें" },
+  "settings": {
+    "title": "सेटिंग्स", "language": "भाषा", "app_language": "ऐप की भाषा",
+    "profile": "प्रोफ़ाइल", "member": "BroMood सदस्य",
+    "privacy": "गोपनीयता और डेटा",
+    "keyboard_label": "कीबोर्ड डेटा संग्रह", "keyboard_sub": "केवल मेटाडेटा — टेक्स्ट नहीं",
+    "healthkit_label": "HealthKit स्लीप सिंक", "healthkit_sub": "नींद के डेटा से मूड पहचानें",
+    "cloud_label": "क्लाउड बैकअप", "cloud_sub": "केवल अज्ञात ट्रेंड",
+    "your_data": "तुम्हारा डेटा", "export": "डेटा निर्यात करें", "delete": "सब हटाएँ",
+    "setup": "सेटअप",
+    "keyboard_setup_title": "BroMood कीबोर्ड सक्षम करें",
+    "keyboard_setup_sub": "Settings → General → Keyboard → Keyboards → Add New Keyboard",
+    "disclaimer": "यह ऐप डॉक्टर नहीं है। केवल एक दोस्त की तरह सहायता करता है।",
+    "delete_title": "सारा डेटा हटाएँ?",
+    "delete_body": "यह सभी मूड लॉग, जर्नल और चैट इतिहास स्थायी रूप से हटा देगा।",
+    "cancel": "रुको", "confirm_delete": "सब हटाएँ"
+  }
 }

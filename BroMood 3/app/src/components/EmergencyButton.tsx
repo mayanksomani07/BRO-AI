@@ -6,11 +6,10 @@ import { COLORS, RADIUS } from '../constants/theme';
 import { useMoodStore } from '../store/moodStore';
 
 interface EmergencyButtonProps {
-  onPress: () => void;
+  onPress?: () => void;
 }
 
-export default function EmergencyButton(props: EmergencyButtonProps) {
-  const { onPress } = props;
+export default function EmergencyButton({ onPress = () => {} }: EmergencyButtonProps) {
   const insets = useSafeAreaInsets();
   const { currentSnapshot } = useMoodStore();
   const score = currentSnapshot?.score ?? 5;

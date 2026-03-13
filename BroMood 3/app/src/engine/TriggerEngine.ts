@@ -1,7 +1,7 @@
 /**
  * TriggerEngine — evaluates mood state and sends contextual nudges.
- * expo-background-fetch and expo-task-manager are gracefully stubbed
- * for Expo Go testing (background tasks require a full native build).
+ * Uses expo-sqlite v13 compatible query helpers.
+ * Background fetch is silently stubbed for Expo Go testing.
  */
 
 import * as Notifications from 'expo-notifications';
@@ -13,9 +13,7 @@ import {
   logNotification,
 } from '../db/queries';
 
-// ─── Safe stubs for native-only modules ───────────────────────────────────────
-// In Expo Go these modules aren't available — we stub them silently.
-// In a full native build (eas build), the real modules will be used.
+// ─── Safe stubs for native-only modules (not available in Expo Go) ────────────
 let BackgroundFetch: {
   BackgroundFetchResult: { NewData: string; Failed: string; NoData: string };
   registerTaskAsync: (name: string, opts: object) => Promise<void>;
@@ -24,6 +22,7 @@ let BackgroundFetch: {
 let TaskManager: {
   defineTask: (name: string, fn: () => Promise<unknown>) => void;
 };
+
 try {
   BackgroundFetch = require('expo-background-fetch');
   TaskManager = require('expo-task-manager');
@@ -100,7 +99,7 @@ async function canSendNotification(snapshot: MoodSnapshot, rule: TriggerRule): P
       if (todayCount >= 1) return false;
     }
     const lastSent = await getLastNotificationForContext(rule.id);
-    if (lastSent !== null && Date.now() - lastSent < rule.cooldown) return false;
+    if (lastSent !== null && Date.now() - lastSent.sent_at < rule.cooldown) return false;
     return true;
   } catch {
     return false;
@@ -152,7 +151,7 @@ async function sendPushNotification(
       content: { title, body, data },
       trigger: null,
     });
-  } catch { /* ignore */ }
+  } catch { /* ignore if permissions not granted */ }
 }
 
 TaskManager.defineTask(TASK_NAME, async () => {
@@ -176,7 +175,7 @@ export const TriggerEngine = {
         stopOnTerminate: false,
         startOnBoot: true,
       });
-    } catch { /* Expo Go: silently skip */ }
+    } catch { /* Expo Go: background fetch not available */ }
   },
 
   async stopBackgroundEvaluation(): Promise<void> {

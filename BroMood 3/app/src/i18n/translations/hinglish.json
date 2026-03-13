@@ -1,31 +1,52 @@
 {
-  "onboarding": {
-    "language_question": "Kaun si language mein comfortable hai tu?",
-    "consent_title": "Tera data, teri privacy",
-    "consent_body": "Hum sirf tujhe support karne ke liye kuch data collect karte hain. Ye kabhi becha nahi jayega.",
-    "let_s_go": "Chalo shuru karein"
-  },
+  "onboarding": { "language_question": "Kaun si language mein comfortable hai tu?", "consent_title": "Tera data, teri privacy", "consent_body": "Hum sirf tujhe support karne ke liye kuch data collect karte hain. Ye kabhi becha nahi jayega.", "let_s_go": "Chalo shuru karein" },
   "home": {
-    "mood_label": "Aaj ka mood",
-    "greeting_morning": "Good morning, {{name}} bhai! ☀️",
-    "greeting_afternoon": "Kya haal hai, {{name}}? 👋",
-    "greeting_night": "Raat ka time hai, {{name}} bhai 🌙",
-    "chat_cta": "Bro_AI se baat kar"
+    "mood_label": "Aaj ka Mood", "greeting_morning": "Good morning, {{name}} bhai! ☀️",
+    "greeting_afternoon": "Kya haal hai, {{name}}? 👋", "greeting_night": "Raat ka time hai, {{name}} bhai 🌙",
+    "greeting_sub": "Kaise ho aaj?",
+    "chat_cta": "Bro_AI se baat kar", "tasks_title": "Aaj ke Tasks",
+    "tasks_done": "complete", "streak": "din streak", "see_all": "Sab dekho",
+    "all_done": "Sab ho gaya!", "want_more": "Aur tasks chahiye?", "more": "Aur lo",
+    "seven_day": "7 Din ka Mood", "quick_access": "JALDI JAO",
+    "signals_today": "Aaj ke signals se pata chala",
+    "mood_very_low": "Mood bahut low hai — madad lo abhi",
+    "journal_sub": "Likh do", "music_sub": "Calm karo",
+    "therapist_label": "Therapist Dhundo", "therapist_sub": "Real madad",
+    "settings_sub": "Bhasha", "bro_ai_sub": "Baat karo"
   },
-  "chat": {
-    "vent_mode": "Bas sun le",
-    "advice_mode": "Kuch suggest kar",
-    "listen_mode": "Sun aur samajh",
-    "placeholder": "Kuch bhi likh..."
+  "tasks": {
+    "title": "Aaj ke Tasks", "your_tasks": "BASE TASKS", "today": "Aaj", "complete": "complete",
+    "done_today": "aaj complete", "keep_going": "keep going!",
+    "progress": "AAJ KI PROGRESS",
+    "all_done_title": "Sab ho gaya! Kya baat hai!",
+    "all_done_sub": "Aaj {{xp}} XP kamaye 💪",
+    "want_bonus": "Aur challenges chahiye?",
+    "bonus_subtitle": "Optional · Extra XP · Unlimited",
+    "bonus_label": "BONUS CHALLENGES",
+    "bonus_sub": "Optional · Extra XP",
+    "new_set": "Naye",
+    "load_more": "Aur 4 bonus tasks",
+    "base_label": "BASE TASKS"
   },
-  "journal": {
-    "title": "Journal",
-    "write": "Likho",
-    "placeholder": "Aaj kya chal raha hai, bhai? Freely likh...",
-    "empty_title": "Journal abhi khali hai"
-  },
-  "emergency": {
-    "title": "Tu akela nahi hai.",
-    "sub": "Ye log abhi sun'ne ke liye available hain — bilkul free."
+  "chat": { "vent_mode": "Bas sun le", "advice_mode": "Kuch suggest kar", "listen_mode": "Sun aur samajh", "placeholder": "Kuch bhi likh..." },
+  "journal": { "title": "Journal", "write": "Likho", "placeholder": "Aaj kya chal raha hai, bhai? Freely likh...", "empty_title": "Journal abhi khali hai" },
+  "emergency": { "title": "Tu akela nahi hai.", "sub": "Ye log abhi sunne ke liye available hain — bilkul free." },
+  "music": { "title": "Music & Saans", "ambient": "AMBIENT AWAAZEIN", "breathing": "SAANS KI EXERCISES" },
+  "therapist": { "title": "Therapist Dhundho", "search": "Naam ya language se dhundho...", "results": "therapist mile", "book": "Session Book Karo", "free_contact": "Free Mein Connect Karo" },
+  "settings": {
+    "title": "Settings", "language": "Bhasha", "app_language": "App ki Bhasha",
+    "profile": "Profile", "member": "BroMood member",
+    "privacy": "Privacy & Data",
+    "keyboard_label": "Keyboard Data", "keyboard_sub": "Sirf metadata — text nahi",
+    "healthkit_label": "HealthKit Sleep", "healthkit_sub": "Neend data se mood detect",
+    "cloud_label": "Cloud Backup", "cloud_sub": "Sirf anonymised trends",
+    "your_data": "Tera Data", "export": "Data Export Karo", "delete": "Sab Delete Karo",
+    "setup": "Setup",
+    "keyboard_setup_title": "BroMood Keyboard Enable Karo",
+    "keyboard_setup_sub": "Settings → General → Keyboard → Keyboards → Add New Keyboard",
+    "disclaimer": "Ye app doctor nahi hai. Sirf ek dost ki tarah support karta hai.",
+    "delete_title": "Sab data delete karein?",
+    "delete_body": "Ye sab mood logs, journal, aur chat history permanently delete kar dega.",
+    "cancel": "Ruko", "confirm_delete": "Sab Delete Karo"
   }
 }

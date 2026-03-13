@@ -1,11 +1,52 @@
 {
+  "onboarding": { "language_question": "ನೀವು ಯಾವ ಭಾಷೆಯಲ್ಲಿ ಆರಾಮದಾಯಕವಾಗಿದ್ದೀರಿ?", "consent_title": "ನಿಮ್ಮ ಡೇಟಾ, ನಿಮ್ಮ ಗೌಪ್ಯತೆ", "consent_body": "ನಿಮ್ಮನ್ನು ಬೆಂಬಲಿಸಲು ಮಾತ್ರ ನಾವು ಡೇಟಾ ಸಂಗ್ರಹಿಸುತ್ತೇವೆ. ಇದು ಎಂದಿಗೂ ಮಾರಾಟ ಆಗುವುದಿಲ್ಲ.", "let_s_go": "ಪ್ರಾರಂಭಿಸೋಣ" },
   "home": {
-    "mood_label": "Mood",
-    "greeting_morning": "Good morning, {{name}}! ☀️",
-    "greeting_afternoon": "Hey {{name}}! 👋",
-    "greeting_night": "{{name}} 🌙",
-    "chat_cta": "Bro_AI"
+    "mood_label": "ಇಂದಿನ ಮನಸ್ಥಿತಿ", "greeting_morning": "ಶುಭೋದಯ, {{name}}! ☀️",
+    "greeting_afternoon": "ಹಲೋ {{name}}! 👋", "greeting_night": "ರಾತ್ರಿ ಸಮಯ, {{name}} 🌙",
+    "greeting_sub": "ಇಂದು ಹೇಗಿದ್ದೀರಿ?",
+    "chat_cta": "Bro_AI ಜೊತೆ ಮಾತನಾಡಿ", "tasks_title": "ಇಂದಿನ ಕಾರ್ಯಗಳು",
+    "tasks_done": "ಮುಗಿದಿದೆ", "streak": "ದಿನ streak", "see_all": "ಎಲ್ಲ ನೋಡಿ",
+    "all_done": "ಎಲ್ಲ ಮುಗಿಯಿತು!", "want_more": "ಇನ್ನಷ್ಟು ಬೇಕೇ?", "more": "ಇನ್ನಷ್ಟು ಲೋಡ್",
+    "seven_day": "೭ ದಿನದ ಮನಸ್ಥಿತಿ", "quick_access": "ತ್ವರಿತ ಪ್ರವೇಶ",
+    "signals_today": "ಇಂದಿನ ಸಂಕೇತಗಳ ಆಧಾರದಲ್ಲಿ",
+    "mood_very_low": "ಮನಸ್ಥಿತಿ ತುಂಬ ಕಡಿಮೆ — ಈಗ ಸಹಾಯ ತೆಗೆದುಕೊಳ್ಳಿ",
+    "journal_sub": "ಬರೆದಿಡಿ", "music_sub": "ಶಾಂತವಾಗಿ",
+    "therapist_label": "ಥೆರಪಿಸ್ಟ್ ಹುಡುಕಿ", "therapist_sub": "ನಿಜವಾದ ಸಹಾಯ",
+    "settings_sub": "ಭಾಷೆ", "bro_ai_sub": "ಮಾತನಾಡಿ"
   },
-  "chat": { "vent_mode": "Listen", "advice_mode": "Advise", "listen_mode": "Understand", "placeholder": "Type..." },
-  "emergency": { "title": "You are not alone.", "sub": "Help is available now, free." }
+  "tasks": {
+    "title": "ಇಂದಿನ ಸವಾಲುಗಳು", "your_tasks": "ಬೇಸ್ ಟಾಸ್ಕ್", "today": "ಇಂದು", "complete": "ಮುಗಿದಿದೆ",
+    "done_today": "ಇಂದು ಮುಗಿದಿದೆ", "keep_going": "ಮುಂದುವರಿಯಿರಿ!",
+    "progress": "ಇಂದಿನ ಪ್ರಗತಿ",
+    "all_done_title": "ಎಲ್ಲ ಮುಗಿದಿದೆ! ಅದ್ಭುತ!",
+    "all_done_sub": "ಇಂದು {{xp}} XP ಗಳಿಸಿದ್ದೀರಿ 💪",
+    "want_bonus": "ಹೆಚ್ಚಿನ ಸವಾಲುಗಳು ಬೇಕೇ?",
+    "bonus_subtitle": "ಐಚ್ಛಿಕ · ಹೆಚ್ಚುವರಿ XP · ಅಪರಿಮಿತ",
+    "bonus_label": "ಬೋನಸ್ ಸವಾಲುಗಳು",
+    "bonus_sub": "ಐಚ್ಛಿಕ · ಹೆಚ್ಚುವರಿ XP",
+    "new_set": "ಹೊಸ ಸೆಟ್",
+    "load_more": "4 ಹೆಚ್ಚಿನ ಬೋನಸ್ ಟಾಸ್ಕ್",
+    "base_label": "ಬೇಸ್ ಟಾಸ್ಕ್"
+  },
+  "chat": { "vent_mode": "ಕೇಳಿ", "advice_mode": "ಸಲಹೆ ನೀಡಿ", "listen_mode": "ಅರ್ಥ ಮಾಡಿ", "placeholder": "ಟೈಪ್ ಮಾಡಿ..." },
+  "journal": { "title": "ಜರ್ನಲ್", "write": "ಬರೆಯಿರಿ", "placeholder": "ಇಂದು ಏನು ನಡೆಯುತ್ತಿದೆ? ಮುಕ್ತವಾಗಿ ಬರೆಯಿರಿ...", "empty_title": "ಜರ್ನಲ್ ಖಾಲಿ ಇದೆ" },
+  "emergency": { "title": "ನೀವು ಒಂಟಿ ಅಲ್ಲ.", "sub": "ಈಗ ಉಚಿತ ಸಹಾಯ ಲಭ್ಯ." },
+  "music": { "title": "ಸಂಗೀತ & ಉಸಿರು", "ambient": "ಪರಿಸರ ಶಬ್ದಗಳು", "breathing": "ಉಸಿರಾಟ ವ್ಯಾಯಾಮ" },
+  "therapist": { "title": "ಥೆರಪಿಸ್ಟ್ ಹುಡುಕಿ", "search": "ಹೆಸರು ಅಥವಾ ಭಾಷೆಯಿಂದ ಹುಡುಕಿ...", "results": "ಥೆರಪಿಸ್ಟ್ ಸಿಕ್ಕಿದ್ದಾರೆ", "book": "ಸೆಷನ್ ಬುಕ್ ಮಾಡಿ", "free_contact": "ಉಚಿತವಾಗಿ ಸಂಪರ್ಕಿಸಿ" },
+  "settings": {
+    "title": "ಸೆಟ್ಟಿಂಗ್ಸ್", "language": "ಭಾಷೆ", "app_language": "ಅಪ್ಲಿಕೇಶನ್ ಭಾಷೆ",
+    "profile": "ಪ್ರೊಫೈಲ್", "member": "BroMood ಸದಸ್ಯ",
+    "privacy": "ಗೌಪ್ಯತೆ ಮತ್ತು ಡೇಟಾ",
+    "keyboard_label": "ಕೀಬೋರ್ಡ್ ಡೇಟಾ ಸಂಗ್ರಹ", "keyboard_sub": "ಮೆಟಾಡೇಟಾ ಮಾತ್ರ — ಟೆಕ್ಸ್ಟ್ ಅಲ್ಲ",
+    "healthkit_label": "HealthKit ನಿದ್ರೆ ಸಿಂಕ್", "healthkit_sub": "ನಿದ್ರೆ ಡೇಟಾದಿಂದ ಮನಸ್ಥಿತಿ",
+    "cloud_label": "ಕ್ಲೌಡ್ ಬ್ಯಾಕಪ್", "cloud_sub": "ಅನಾಮಧೇಯ ಟ್ರೆಂಡ್ ಮಾತ್ರ",
+    "your_data": "ನಿಮ್ಮ ಡೇಟಾ", "export": "ಡೇಟಾ ರಫ್ತು ಮಾಡಿ", "delete": "ಎಲ್ಲ ಅಳಿಸಿ",
+    "setup": "ಸೆಟಪ್",
+    "keyboard_setup_title": "BroMood ಕೀಬೋರ್ಡ್ ಸಕ್ರಿಯಗೊಳಿಸಿ",
+    "keyboard_setup_sub": "Settings → General → Keyboard → Keyboards → Add New Keyboard",
+    "disclaimer": "ಈ ಅಪ್ಲಿಕೇಶನ್ ವೈದ್ಯರಲ್ಲ. ಸ್ನೇಹಿತನಂತೆ ಬೆಂಬಲ ನೀಡುತ್ತದೆ.",
+    "delete_title": "ಎಲ್ಲ ಡೇಟಾ ಅಳಿಸಬೇಕೇ?",
+    "delete_body": "ಎಲ್ಲ ಮೂಡ್ ಲಾಗ್, ಜರ್ನಲ್ ಮತ್ತು ಚಾಟ್ ಇತಿಹಾಸ ಶಾಶ್ವತವಾಗಿ ಅಳಿಸಲಾಗುತ್ತದೆ.",
+    "cancel": "ರದ್ದು ಮಾಡಿ", "confirm_delete": "ಎಲ್ಲ ಅಳಿಸಿ"
+  }
 }
