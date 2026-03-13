@@ -162,23 +162,30 @@ export default function MusicScreen() {
 
   const speakPhase = (p: Phase, _lang: string) => {
     Speech.stop();
+    // Strip emojis so TTS speaks only the words
+    const strip = (s: string) => s.replace(/[\u{1F000}-\u{1FFFF}\u{2600}-\u{27FF}]/gu, '').trim();
     const phaseKey: Record<Phase, string> = {
-      inhale:   t('music.breathe_in'),
-      hold:     t('music.hold'),
-      exhale:   t('music.breathe_out'),
-      hold_out: t('music.hold_out'),
+      inhale:   strip(t('music.breathe_in')),
+      hold:     strip(t('music.hold')),
+      exhale:   strip(t('music.breathe_out')),
+      hold_out: strip(t('music.hold_out')),
     };
     Speech.speak(phaseKey[p], { language: 'en-US', rate: 0.85, pitch: 0.9 });
   };
 
   const animateCircle = (p: Phase, durationSec: number) => {
     breathAnimRef.current?.stop();
-    breathAnimRef.current = Animated.timing(breathAnim, {
-      toValue: p === 'inhale' ? 1 : p === 'exhale' ? 0.35 : breathAnim.__getValue(),
-      duration: durationSec * 1000,
-      useNativeDriver: false,
+
+    const target = p === 'inhale' ? 1 : p === 'exhale' ? 0.35 : null;
+
+    breathAnim.stopAnimation((currentValue) => {
+      breathAnimRef.current = Animated.timing(breathAnim, {
+        toValue: target ?? currentValue,
+        duration: durationSec * 1000,
+        useNativeDriver: false,
+      });
+      breathAnimRef.current.start();
     });
-    breathAnimRef.current.start();
   };
 
   const startPhase = (ex: BreathEx, p: Phase, r: number) => {
