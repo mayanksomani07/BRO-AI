@@ -23,6 +23,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons }       from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import * as Haptics       from 'expo-haptics';
+import { useTranslation } from 'react-i18next';
 
 import { COLORS, RADIUS } from '../../constants/theme';
 import { useUserStore }   from '../../store/userStore';
@@ -293,8 +294,8 @@ function TaskCard({
 export default function TasksScreen({ navigation }: { navigation?: any }) {
   const { language }        = useUserStore();
   const { currentSnapshot } = useMoodStore();
+  const { t }               = useTranslation();
   const score               = currentSnapshot?.score ?? 5;
-  const isEng               = language === 'english';
 
   const [completedIds,  setCompletedIds]  = useState<Set<string>>(new Set());
   const [bonusTasks,    setBonusTasks]    = useState<DailyTask[]>([]);
@@ -311,8 +312,8 @@ export default function TasksScreen({ navigation }: { navigation?: any }) {
   const prevLvl  = useRef('');
 
   const baseTasks   = getAvailableTasks(score);
-  const allBaseDone = baseTasks.length > 0 && baseTasks.every(t => completedIds.has(t.id));
-  const doneCount   = baseTasks.filter(t => completedIds.has(t.id)).length;
+  const allBaseDone = baseTasks.length > 0 && baseTasks.every(task => completedIds.has(task.id));
+  const doneCount   = baseTasks.filter(task => completedIds.has(task.id)).length;
 
   const loadData = useCallback(async () => {
     try {
@@ -339,7 +340,7 @@ export default function TasksScreen({ navigation }: { navigation?: any }) {
         prevLvl.current = newLvl;
         setStats({ xp: st.total_xp, level: newLvl, streak: st.streak_days });
       }
-      if (baseTasks.length > 0 && baseTasks.every(t => idSet.has(t.id)) && wantBonus) {
+      if (baseTasks.length > 0 && baseTasks.every(task => idSet.has(task.id)) && wantBonus) {
         setBonusTasks(prev => prev.length > 0 ? prev : getNextBonusTasks(idSet, 4));
       }
     } catch (e) { console.warn('TasksScreen loadData:', e); }
@@ -368,7 +369,7 @@ export default function TasksScreen({ navigation }: { navigation?: any }) {
   };
 
   const loadMoreBonus = () => {
-    const seen = new Set([...completedIds, ...bonusTasks.map(t => t.id)]);
+    const seen = new Set([...completedIds, ...bonusTasks.map(task => task.id)]);
     setBonusTasks(getNextBonusTasks(seen, 4));
     setBonusPage(p => p + 1);
   };
@@ -420,9 +421,9 @@ export default function TasksScreen({ navigation }: { navigation?: any }) {
           {/* Header */}
           <View style={s.header}>
             <View style={{ flex: 1 }}>
-              <Text style={s.title}>{isEng ? 'Daily Tasks' : 'Aaj ke Tasks'}</Text>
+              <Text style={s.title}>{t('tasks.title')}</Text>
               <Text style={s.sub}>
-                {doneCount}/{baseTasks.length} {isEng ? 'done' : 'complete'} · {isEng ? 'keep going!' : 'keep going!'}
+                {doneCount}/{baseTasks.length} {t('tasks.done_today')} · {t('tasks.keep_going')}
               </Text>
             </View>
             <TouchableOpacity onPress={() => nav('Emergency')} style={s.sosBtn}>
@@ -442,7 +443,7 @@ export default function TasksScreen({ navigation }: { navigation?: any }) {
           {/* Daily progress */}
           <View style={s.progressCard}>
             <View style={s.progressTop}>
-              <Text style={s.progressLabel}>{isEng ? "TODAY'S PROGRESS" : 'AAJ KI PROGRESS'}</Text>
+              <Text style={s.progressLabel}>{t('tasks.progress')}</Text>
               <Text style={s.progressFrac}>{doneCount}/{baseTasks.length}</Text>
             </View>
             <View style={s.progressTrack}>
@@ -451,14 +452,14 @@ export default function TasksScreen({ navigation }: { navigation?: any }) {
               }]} />
             </View>
             <View style={s.dotRow}>
-              {baseTasks.map(t => (
-                <View key={t.id} style={[s.dot, completedIds.has(t.id) && s.dotDone]} />
+              {baseTasks.map(task => (
+                <View key={task.id} style={[s.dot, completedIds.has(task.id) && s.dotDone]} />
               ))}
             </View>
           </View>
 
           {/* Base tasks */}
-          <Text style={s.sectionLabel}>{isEng ? 'BASE TASKS' : 'BASE TASKS'}</Text>
+          <Text style={s.sectionLabel}>{t('tasks.base_label')}</Text>
           {baseTasks.map(task => (
             <TaskCard
               key={task.id}
@@ -474,12 +475,10 @@ export default function TasksScreen({ navigation }: { navigation?: any }) {
               <Text style={{ fontSize: 32 }}>🎉</Text>
               <View style={{ flex: 1 }}>
                 <Text style={s.allDoneTitle}>
-                  {isEng ? 'All tasks done! Amazing!' : 'Sab ho gaya! Kya baat hai!'}
+                  {t('tasks.all_done_title')}
                 </Text>
                 <Text style={s.allDoneSub}>
-                  {isEng
-                    ? `You earned +${todayXpDisplay} XP today`
-                    : `Aaj ${todayXpDisplay} XP kamaye 💪`}
+                  {t('tasks.all_done_sub', { xp: todayXpDisplay })}
                 </Text>
               </View>
             </View>
@@ -492,10 +491,10 @@ export default function TasksScreen({ navigation }: { navigation?: any }) {
                 <Text style={{ fontSize: 24 }}>⚡</Text>
                 <View style={{ flex: 1 }}>
                   <Text style={s.wantBonusTitle}>
-                    {isEng ? 'Want bonus challenges?' : 'Aur challenges chahiye?'}
+                    {t('tasks.want_bonus')}
                   </Text>
                   <Text style={s.wantBonusSub}>
-                    {isEng ? 'Optional · Extra XP · Unlimited' : 'Optional · Extra XP · Unlimited'}
+                    {t('tasks.bonus_subtitle')}
                   </Text>
                 </View>
                 <View style={s.wantBonusArrow}>
@@ -510,11 +509,11 @@ export default function TasksScreen({ navigation }: { navigation?: any }) {
               <View style={s.bonusHeader}>
                 <View>
                   <Text style={s.bonusTitle}>⚡ BONUS CHALLENGES</Text>
-                  <Text style={s.bonusSub}>{isEng ? 'Optional · Extra XP' : 'Optional · Extra XP'}</Text>
+                  <Text style={s.bonusSub}>{t('tasks.bonus_sub')}</Text>
                 </View>
                 <TouchableOpacity style={s.refreshBtn} onPress={loadMoreBonus}>
                   <Ionicons name="refresh" size={13} color={COLORS.primary} />
-                  <Text style={s.refreshTxt}>{isEng ? 'New set' : 'Naye'}</Text>
+                  <Text style={s.refreshTxt}>{t('tasks.new_set')}</Text>
                 </TouchableOpacity>
               </View>
 
@@ -531,7 +530,7 @@ export default function TasksScreen({ navigation }: { navigation?: any }) {
               <TouchableOpacity style={s.moreBtn} onPress={loadMoreBonus}>
                 <Ionicons name="add-circle-outline" size={18} color={COLORS.primary} />
                 <Text style={s.moreTxt}>
-                  {isEng ? 'Load 4 more bonus tasks' : 'Aur 4 bonus tasks'}
+                  {t('tasks.load_more')}
                 </Text>
               </TouchableOpacity>
             </>

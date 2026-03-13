@@ -32,7 +32,7 @@ import HomeScreen      from './src/screens/Home/HomeScreen';
 import ChatScreen      from './src/screens/Chat/ChatScreen';
 import MusicScreen     from './src/screens/Music/MusicScreen';
 import TherapistScreen from './src/screens/Therapist/TherapistScreen';
-import MoreScreen      from './src/screens/More/Morescreen';
+import MoreScreen      from './src/screens/More/MoreScreen';
 import TasksScreen     from './src/screens/Tasks/TasksScreen';
 import JournalScreen   from './src/screens/Journal/JournalScreen';
 import SettingsScreen  from './src/screens/Settings/SettingsScreen';

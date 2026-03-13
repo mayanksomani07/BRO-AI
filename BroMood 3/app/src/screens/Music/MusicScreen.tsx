@@ -46,7 +46,7 @@ type Phase = 'inhale' | 'hold' | 'exhale' | 'hold_out';
 
 export default function MusicScreen() {
   const { language } = useUserStore();
-  const isEng = language === 'english';
+  const { t } = useTranslation();
 
   // ── Audio state ───────────────────────────────────────────────────────────────
   const soundRef = useRef<Audio.Sound | null>(null);
@@ -117,9 +117,7 @@ export default function MusicScreen() {
       setCurrentTrack(track);
       setIsPlaying(true);
     } catch (err: any) {
-      setAudioError(isEng
-        ? 'Could not load stream. Check your internet connection.'
-        : 'Stream load nahi hui. Internet check karo.');
+      setAudioError(t('music.audio_error'));
       setCurrentTrack(track);
       setIsPlaying(false);
     } finally {
@@ -162,31 +160,21 @@ export default function MusicScreen() {
     return null;
   };
 
-  const speakPhase = (p: Phase, lang: string) => {
+  const speakPhase = (p: Phase, _lang: string) => {
     Speech.stop();
-    const labels: Record<Phase, { hi: string; en: string }> = {
-      inhale:   { hi: 'Saans lo',    en: 'Breathe in' },
-      hold:     { hi: 'Roko',        en: 'Hold' },
-      exhale:   { hi: 'Saans chodo', en: 'Breathe out' },
-      hold_out: { hi: 'Roko',        en: 'Hold out' },
+    const phaseKey: Record<Phase, string> = {
+      inhale:   t('music.breathe_in'),
+      hold:     t('music.hold'),
+      exhale:   t('music.breathe_out'),
+      hold_out: t('music.hold_out'),
     };
-    const text = lang === 'english' ? labels[p].en : labels[p].hi;
-    Speech.speak(text, { language: 'en-US', rate: 0.85, pitch: 0.9 });
+    Speech.speak(phaseKey[p], { language: 'en-US', rate: 0.85, pitch: 0.9 });
   };
 
   const animateCircle = (p: Phase, durationSec: number) => {
     breathAnimRef.current?.stop();
-    const toValue =
-      p === 'inhale'
-        ? 1
-        : p === 'exhale'
-          ? 0.35
-          : p === 'hold'
-            ? 1
-            : 0.35; // hold_out
-
     breathAnimRef.current = Animated.timing(breathAnim, {
-      toValue,
+      toValue: p === 'inhale' ? 1 : p === 'exhale' ? 0.35 : breathAnim.__getValue(),
       duration: durationSec * 1000,
       useNativeDriver: false,
     });
@@ -231,7 +219,7 @@ export default function MusicScreen() {
   const advanceRound = (ex: BreathEx, r: number) => {
     if (r >= ex.rounds) {
       // Done!
-      Speech.speak(language === 'english' ? 'Great job. Session complete.' : 'Bahut achha. Ho gaya.', { rate: 0.85 });
+      Speech.speak(t('music.complete'), { rate: 0.85 });
       setTimeout(() => {
         setActiveEx(null);
         Animated.timing(breathAnim, { toValue: 0.35, duration: 600, useNativeDriver: false }).start();
@@ -264,7 +252,7 @@ export default function MusicScreen() {
       <SafeAreaView style={s.safe} edges={['top']}>
         <ScrollView contentContainerStyle={s.content} showsVerticalScrollIndicator={false}>
 
-          <Text style={s.headerTitle}>{isEng ? 'Music & Breathe' : 'Music & Saans'}</Text>
+          <Text style={s.headerTitle}>{t('music.title')}</Text>
 
           {/* Now playing bar */}
           {currentTrack && (
@@ -287,8 +275,8 @@ export default function MusicScreen() {
           )}
 
           {/* Ambient tracks */}
-          <Text style={s.sectionLabel}>{isEng ? 'AMBIENT SOUNDS' : 'AMBIENT AWAAZEIN'}</Text>
-          <Text style={s.sectionSub}>{isEng ? 'Free live radio · internet required' : 'Free live radio · internet chahiye'}</Text>
+          <Text style={s.sectionLabel}>{t('music.ambient')}</Text>
+          <Text style={s.sectionSub}>{t('music.ambient_sub')}</Text>
 
           <View style={s.trackGrid}>
             {TRACKS.map(track => {
@@ -326,15 +314,15 @@ export default function MusicScreen() {
           </View>
 
           {/* Breathing section */}
-          <Text style={[s.sectionLabel, { marginTop: 20 }]}>{isEng ? 'BREATHING EXERCISES' : 'SAANS KI EXERCISES'}</Text>
-          <Text style={s.sectionSub}>{isEng ? 'Voice-guided with audio cues' : 'Awaaz ke saath guided breathing'}</Text>
+          <Text style={[s.sectionLabel, { marginTop: 20 }]}>{t('music.breathing')}</Text>
+          <Text style={s.sectionSub}>{t('music.breathing_sub')}</Text>
 
           {activeEx ? (
             <View style={s.breathPlayer}>
               <LinearGradient colors={['#060C1A', '#040810']} style={s.breathPlayerGrad}>
                 <Text style={s.breathExName}>{activeEx.name}</Text>
                 <Text style={s.breathRoundText}>
-                  {isEng ? `Round ${round} of ${activeEx.rounds}` : `Round ${round} / ${activeEx.rounds}`}
+                  {t('music.round_of', { round, total: activeEx.rounds })}
                 </Text>
 
                 {/* Animated circle */}
@@ -360,16 +348,16 @@ export default function MusicScreen() {
 
                 <Text style={[s.phaseLabel, { color: phaseColor }]}>
                   {{
-                    inhale:   isEng ? 'Breathe In 🫁' : 'Saans Lo 🫁',
-                    hold:     isEng ? 'Hold 🤐'       : 'Roko 🤐',
-                    exhale:   isEng ? 'Breathe Out 💨' : 'Saans Chodo 💨',
-                    hold_out: isEng ? 'Hold Out 😮'   : 'Bahar Roko 😮',
+                    inhale:   t('music.breathe_in'),
+                    hold:     t('music.hold'),
+                    exhale:   t('music.breathe_out'),
+                    hold_out: t('music.hold_out'),
                   }[phase]}
                 </Text>
-                <Text style={s.voiceNote}>🔊 {isEng ? 'Voice guidance on' : 'Awaaz guidance on hai'}</Text>
+                <Text style={s.voiceNote}>{t('music.voice_on')}</Text>
 
                 <TouchableOpacity style={s.stopBtn} onPress={stopBreathing}>
-                  <Text style={s.stopBtnText}>{isEng ? 'Stop Exercise' : 'Band Karo'}</Text>
+                  <Text style={s.stopBtnText}>{t('music.stop')}</Text>
                 </TouchableOpacity>
               </LinearGradient>
             </View>
@@ -385,10 +373,10 @@ export default function MusicScreen() {
                     <Text style={s.breathDesc}>{ex.desc}</Text>
                     <View style={s.patternRow}>
                       {[
-                        { label: isEng ? 'In' : 'Lo', val: ex.inhale },
-                        { label: isEng ? 'Hold' : 'Roko', val: ex.hold },
-                        { label: isEng ? 'Out' : 'Chodo', val: ex.exhale },
-                        ...(ex.holdOut > 0 ? [{ label: isEng ? 'Hold' : 'Roko', val: ex.holdOut }] : []),
+                        { label: t('music.in'), val: ex.inhale },
+                        { label: t('music.hold_short'), val: ex.hold },
+                        { label: t('music.out_label'), val: ex.exhale },
+                        ...(ex.holdOut > 0 ? [{ label: t('music.hold_short'), val: ex.holdOut }] : []),
                       ].map((p, i) => (
                         <View key={i} style={[s.patChip, { backgroundColor: ex.color + '20' }]}>
                           <Text style={[s.patLabel, { color: ex.color }]}>{p.label}</Text>

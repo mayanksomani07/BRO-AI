@@ -9,6 +9,7 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Crypto from 'expo-crypto';
 
 import { COLORS, getMoodColor, RADIUS } from '../../constants/theme';
+import { useTranslation } from 'react-i18next';
 import { useUserStore } from '../../store/userStore';
 import { useMoodStore } from '../../store/moodStore';
 import { insertJournalEntry, getJournalEntries, deleteJournalEntry, JournalEntry } from '../../db/queries';
@@ -33,6 +34,7 @@ function decrypt(text: string): string {
 }
 
 export default function JournalScreen() {
+  const { t } = useTranslation();
   const { language } = useUserStore();
   const { currentSnapshot, updateJournalSentiment } = useMoodStore();
   const [entries, setEntries] = useState<JournalEntry[]>([]);
@@ -78,11 +80,9 @@ export default function JournalScreen() {
 
       if (sentiment.urgencyFlag) {
         Alert.alert(
-          language === 'english' ? "Hey, I see you're going through something tough" : 'Yaar, kuch mushkil lag raha hai',
-          language === 'english'
-            ? 'Please reach out to iCall: 9152987821 — free, available now 💙'
-            : 'Please iCall se baat kar: 9152987821 — free, abhi available 💙',
-          [{ text: language === 'english' ? 'Thank you' : 'Shukriya', style: 'cancel' }]
+          t('emergency.title'),
+          t('emergency.sub'),
+          [{ text: t('settings.cancel'), style: 'cancel' }]
         );
       }
     } catch (err) {
@@ -104,12 +104,12 @@ export default function JournalScreen() {
 
   const handleDelete = (id: string) => {
     Alert.alert(
-      language === 'english' ? 'Delete Entry?' : 'Delete karein?',
-      language === 'english' ? 'This cannot be undone.' : 'Ye wapas nahi aayega.',
+      t('settings.delete_title'),
+      t('settings.delete_body'),
       [
-        { text: language === 'english' ? 'Cancel' : 'Ruko', style: 'cancel' },
+        { text: t('settings.cancel'), style: 'cancel' },
         {
-          text: language === 'english' ? 'Delete' : 'Delete', style: 'destructive',
+          text: 'Delete', style: 'destructive',
           onPress: async () => {
             await deleteJournalEntry(id);
             await loadEntries();
@@ -151,9 +151,9 @@ export default function JournalScreen() {
           <Text style={styles.entryText} numberOfLines={4}>{decrypted}</Text>
           {themes.length > 0 && (
             <View style={styles.themeList}>
-              {themes.slice(0, 3).map(t => (
-                <View key={t} style={styles.themeChip}>
-                  <Text style={styles.themeChipText}>{t.replace('_', ' ')}</Text>
+              {themes.slice(0, 3).map(theme => (
+                <View key={theme} style={styles.themeChip}>
+                  <Text style={styles.themeChipText}>{theme.replace('_', ' ')}</Text>
                 </View>
               ))}
             </View>
@@ -169,7 +169,7 @@ export default function JournalScreen() {
       <SafeAreaView style={styles.safeArea} edges={['top']}>
         <View style={styles.header}>
           <Text style={styles.headerTitle}>
-            {language === 'english' ? 'Journal' : 'Journal'}
+            {t('journal.title')}
           </Text>
           <TouchableOpacity
             style={styles.writeBtn}
@@ -179,7 +179,7 @@ export default function JournalScreen() {
             <LinearGradient colors={[COLORS.primary, COLORS.primaryDark]} style={styles.writeBtnGrad}>
               <Ionicons name="add" size={20} color="#fff" />
               <Text style={styles.writeBtnText}>
-                {language === 'english' ? 'Write' : 'Likho'}
+                {t('journal.write')}
               </Text>
             </LinearGradient>
           </TouchableOpacity>
@@ -194,10 +194,10 @@ export default function JournalScreen() {
             <View style={styles.empty}>
               <Text style={styles.emptyEmoji}>📔</Text>
               <Text style={styles.emptyTitle}>
-                {language === 'english' ? 'Your journal is empty' : 'Journal abhi khali hai'}
+                {t('journal.empty_title')}
               </Text>
               <Text style={styles.emptySub}>
-                {language === 'english'
+                {false
                   ? 'Write your first entry. Just a few lines is enough.'
                   : 'Pehli entry likh. Bas kuch lines kaafi hain.'}
               </Text>
@@ -212,7 +212,7 @@ export default function JournalScreen() {
             <View style={styles.modalHeader}>
               <TouchableOpacity onPress={() => { setIsWriting(false); setDraftText(''); }}>
                 <Text style={styles.modalCancel}>
-                  {language === 'english' ? 'Cancel' : 'Cancel'}
+                  {'Cancel'}
                 </Text>
               </TouchableOpacity>
               <Text style={styles.modalTitle}>
@@ -223,7 +223,7 @@ export default function JournalScreen() {
                 disabled={isAnalyzing || !draftText.trim()}
               >
                 <Text style={[styles.modalSave, !draftText.trim() && styles.modalSaveDisabled]}>
-                  {isAnalyzing ? '...' : (language === 'english' ? 'Save' : 'Save')}
+                  {isAnalyzing ? '...' : ('Save')}
                 </Text>
               </TouchableOpacity>
             </View>
@@ -235,9 +235,7 @@ export default function JournalScreen() {
                 style={styles.journalInput}
                 value={draftText}
                 onChangeText={setDraftText}
-                placeholder={language === 'english'
-                  ? "What's on your mind today, bro? Write freely..."
-                  : 'Aaj kya chal raha hai, bhai? Freely likh...'}
+                placeholder={t('journal.placeholder')}
                 placeholderTextColor={COLORS.textMuted}
                 multiline
                 autoFocus
@@ -248,7 +246,7 @@ export default function JournalScreen() {
               <View style={styles.analyzingBanner}>
                 <Ionicons name="pulse" size={16} color={COLORS.primary} />
                 <Text style={styles.analyzingText}>
-                  {language === 'english' ? 'Bro_AI analyzing your mood...' : 'Bro_AI mood analyze kar raha hai...'}
+                  {t('journal.placeholder')}
                 </Text>
               </View>
             )}

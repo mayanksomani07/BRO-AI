@@ -15,6 +15,7 @@ import { Ionicons }        from '@expo/vector-icons';
 import { useNavigation }   from '@react-navigation/native';
 import { COLORS, RADIUS }  from '../../constants/theme';
 import { useUserStore }    from '../../store/userStore';
+import { useTranslation }  from 'react-i18next';
 
 type Specialty = 'all' | 'anxiety' | 'depression' | 'relationships' | 'career' | 'grief';
 type Mode      = 'all' | 'online' | 'offline' | 'free';
@@ -139,18 +140,18 @@ const SPEC_ICONS: Record<string, IonName> = {
 export default function TherapistScreen() {
   const nav = useNavigation<any>();
   const { language } = useUserStore();
-  const isEng = language === 'english';
+  const { t } = useTranslation();
 
   const [specialty, setSpecialty] = useState<Specialty>('all');
   const [mode,      setMode]      = useState<Mode>('all');
   const [search,    setSearch]    = useState('');
 
-  const filtered = THERAPISTS.filter(t => {
-    const okSpec   = specialty === 'all' || t.specialties.includes(specialty);
-    const okMode   = mode === 'all' ? true : mode === 'free' ? !!t.isFree : t.mode.includes(mode as any);
+  const filtered = THERAPISTS.filter(th => {
+    const okSpec   = specialty === 'all' || th.specialties.includes(specialty);
+    const okMode   = mode === 'all' ? true : mode === 'free' ? !!th.isFree : th.mode.includes(mode as any);
     const okSearch = !search
-      || t.name.toLowerCase().includes(search.toLowerCase())
-      || t.languages.some(l => l.toLowerCase().includes(search.toLowerCase()));
+      || th.name.toLowerCase().includes(search.toLowerCase())
+      || th.languages.some(l => l.toLowerCase().includes(search.toLowerCase()));
     return okSpec && okMode && okSearch;
   });
 
@@ -162,8 +163,8 @@ export default function TherapistScreen() {
         {/* ── Header ────────────────────────────────────────────────────── */}
         <View style={s.header}>
           <View style={{ flex: 1 }}>
-            <Text style={s.headerTitle}>{isEng ? 'Find Therapist' : 'Therapist Dhundho'}</Text>
-            <Text style={s.headerSub}>{isEng ? 'Many are free · All confidential' : 'Kai free hain · Sab private'}</Text>
+            <Text style={s.headerTitle}>{t('therapist.title')}</Text>
+            <Text style={s.headerSub}>{t('therapist.sub')}</Text>
           </View>
         </View>
 
@@ -171,7 +172,7 @@ export default function TherapistScreen() {
         <TouchableOpacity style={s.crisisBand} onPress={() => Linking.openURL('tel:9152987821')} activeOpacity={0.88}>
           <View style={s.crisisBandLeft}>
             <Ionicons name="call" size={14} color="#fff" />
-            <Text style={s.crisisBandTxt}>{isEng ? 'Crisis? iCall FREE: 9152987821' : 'Crisis mein? iCall FREE: 9152987821'}</Text>
+            <Text style={s.crisisBandTxt}>{t('therapist.crisis_band')}</Text>
           </View>
           <View style={s.freeBadgeSmall}><Text style={s.freeBadgeSmallTxt}>FREE</Text></View>
         </TouchableOpacity>
@@ -183,7 +184,7 @@ export default function TherapistScreen() {
             style={s.searchInput}
             value={search}
             onChangeText={setSearch}
-            placeholder={isEng ? 'Name or language…' : 'Naam ya language…'}
+            placeholder={t('therapist.search')}
             placeholderTextColor={COLORS.textMuted}
           />
           {search.length > 0 && (
@@ -233,16 +234,16 @@ export default function TherapistScreen() {
 
         {/* Result count */}
         <Text style={s.countTxt}>
-          {filtered.length} {isEng ? 'found' : 'mile'}
+          {filtered.length} {t('therapist.found')}
         </Text>
 
         {/* ── Cards ─────────────────────────────────────────────────────── */}
         <ScrollView contentContainerStyle={s.listContent} showsVerticalScrollIndicator={false}>
-          {filtered.map(t => <TherapistCard key={t.id} t={t} language={language} />)}
+          {filtered.map(th => <TherapistCard key={th.id} t={th} language={language} />)}
           {filtered.length === 0 && (
             <View style={s.empty}>
               <Text style={{ fontSize: 40 }}>🔍</Text>
-              <Text style={s.emptyTxt}>{isEng ? 'No matches. Try other filters.' : 'Koi nahi mila. Filters badlo.'}</Text>
+              <Text style={s.emptyTxt}>{t('therapist.empty')}</Text>
             </View>
           )}
           <View style={{ height: 40 }} />
@@ -254,7 +255,7 @@ export default function TherapistScreen() {
 
 // ─── Card ─────────────────────────────────────────────────────────────────────
 function TherapistCard({ t, language }: { t: Therapist; language: string }) {
-  const isEng = language === 'english';
+  const { t: tr } = useTranslation();
 
   // ── Booking: openURL with robust fallback ───────────────────────────────
   const openBooking = async () => {
@@ -269,21 +270,17 @@ function TherapistCard({ t, language }: { t: Therapist; language: string }) {
     } catch {
       // Fallback: show options
       const msg = t.phone
-        ? (isEng
-            ? `Could not open the website. You can call directly: ${t.phone}`
-            : `Website nahi khula. Seedha call karo: ${t.phone}`)
-        : (isEng
-            ? `Could not open the website. Try searching "${t.name}" on Practo or Google.`
-            : `Website nahi khula. Practo ya Google pe "${t.name}" search karo.`);
+        ? tr('therapist.dial') + t.phone
+        : tr('therapist.empty');
 
-      const buttons: any[] = [{ text: isEng ? 'OK' : 'Theek hai', style: 'cancel' }];
+      const buttons: any[] = [{ text: tr('therapist.ok'), style: 'cancel' }];
       if (t.phone) {
         buttons.push({
-          text: isEng ? `Call ${t.phone}` : `Call Karo`,
+          text: tr('therapist.call_label'),
           onPress: () => Linking.openURL(`tel:${t.phone!.replace(/\D/g, '')}`),
         });
       }
-      Alert.alert(isEng ? 'Open failed' : 'Nahi khula', msg, buttons);
+      Alert.alert(tr('therapist.open_failed'), msg, buttons);
     }
   };
 
@@ -291,7 +288,7 @@ function TherapistCard({ t, language }: { t: Therapist; language: string }) {
     if (!t.phone) return;
     const cleaned = t.phone.replace(/\D/g, '');
     Linking.openURL(`tel:${cleaned}`).catch(() =>
-      Alert.alert('', isEng ? `Dial manually: ${t.phone}` : `Manually dial karo: ${t.phone}`)
+      Alert.alert('', `${tr('therapist.dial')}${t.phone}`)
     );
   };
 
@@ -358,7 +355,7 @@ function TherapistCard({ t, language }: { t: Therapist; language: string }) {
           {t.phone && (
             <TouchableOpacity style={c.callBtn} onPress={callNow} activeOpacity={0.85}>
               <Ionicons name="call" size={15} color={COLORS.success} />
-              <Text style={c.callBtnTxt}>{isEng ? 'Call Free' : 'Free Call'}</Text>
+              <Text style={c.callBtnTxt}>{tr('therapist.call_free')}</Text>
             </TouchableOpacity>
           )}
           <TouchableOpacity style={c.bookBtn} onPress={openBooking} activeOpacity={0.85}>
@@ -370,8 +367,8 @@ function TherapistCard({ t, language }: { t: Therapist; language: string }) {
               <Ionicons name={t.isFree ? 'link' : 'calendar'} size={14} color="#fff" />
               <Text style={c.bookTxt}>
                 {t.isFree
-                  ? (isEng ? 'Visit Website' : 'Website Dekho')
-                  : (isEng ? 'Book on Practo' : 'Practo pe Book Karo')}
+                  ? (tr('therapist.visit'))
+                  : (tr('therapist.book_practo'))}
               </Text>
               <Ionicons name="open-outline" size={12} color="rgba(255,255,255,0.65)" />
             </LinearGradient>

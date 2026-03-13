@@ -8,7 +8,9 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 
 import { useChatStore, ChatMode } from '../../store/chatStore';
+import { typingStart, typingKeystroke, typingFinish } from '../../engine/BiomarkerEngine';
 import { useMoodStore } from '../../store/moodStore';
+import { useTranslation } from 'react-i18next';
 import { useUserStore } from '../../store/userStore';
 import { COLORS, getMoodColor, RADIUS } from '../../constants/theme';
 import EmergencyButton from '../../components/EmergencyButton';
@@ -22,6 +24,7 @@ const MODES: { key: ChatMode; emoji: string; labelHi: string; labelEn: string }[
 export default function ChatScreen() {
   const { messages, chatMode, isTyping, hasUrgency, setChatMode, sendMessage, loadHistory } = useChatStore();
   const { currentSnapshot } = useMoodStore();
+  const { t } = useTranslation();
   const { language } = useUserStore();
   const [inputText, setInputText] = useState('');
   const flatListRef = useRef<FlatList>(null);
@@ -35,8 +38,13 @@ export default function ChatScreen() {
     }
   }, [messages, isTyping]);
 
+  const { applyTypingMetrics } = useMoodStore();
+
   const handleSend = async () => {
     if (!inputText.trim()) return;
+    // Finish typing session 2014 feed metrics to mood engine
+    const metrics = typingFinish();
+    if (metrics) applyTypingMetrics(metrics);
     const text = inputText.trim();
     setInputText('');
     await sendMessage(text);
@@ -77,7 +85,7 @@ export default function ChatScreen() {
           <View>
             <Text style={styles.headerTitle}>Bro_AI</Text>
             <Text style={styles.headerSub}>
-              {language === 'english' ? 'Your 24/7 support friend' : '24/7 available, sirf tere liye'}
+              {t('home.bro_ai_sub')}
             </Text>
           </View>
           <View style={[styles.moodBadge, { backgroundColor: getMoodColor(score) + '30', borderColor: getMoodColor(score) + '60' }]}>
@@ -96,7 +104,7 @@ export default function ChatScreen() {
             >
               <Text style={styles.modeEmoji}>{mode.emoji}</Text>
               <Text style={[styles.modeLabel, chatMode === mode.key && styles.modeLabelActive]}>
-                {language === 'english' ? mode.labelEn : mode.labelHi}
+                {t(`chat.${mode.key}_mode`)}
               </Text>
             </TouchableOpacity>
           ))}
@@ -109,7 +117,7 @@ export default function ChatScreen() {
           keyExtractor={item => item.id}
           renderItem={renderMessage}
           contentContainerStyle={styles.messageList}
-          ListEmptyComponent={<EmptyChat language={language} />}
+          ListEmptyComponent={<EmptyChat />}
           ListFooterComponent={isTyping ? <TypingIndicator /> : null}
         />
 
@@ -118,9 +126,7 @@ export default function ChatScreen() {
           <View style={styles.urgencyBanner}>
             <Ionicons name="heart" size={18} color={COLORS.danger} />
             <Text style={styles.urgencyText}>
-              {language === 'english'
-                ? "I'm here with you. Please reach out for help:"
-                : 'Main hoon tere saath. Please help le:'}
+              {t('emergency.sub')}
             </Text>
             <TouchableOpacity onPress={() => Linking.openURL('tel:9152987821')}>
               <Text style={styles.urgencyCall}>iCall: 9152987821</Text>
@@ -138,8 +144,9 @@ export default function ChatScreen() {
               <TextInput
                 style={styles.input}
                 value={inputText}
-                onChangeText={setInputText}
-                placeholder={language === 'english' ? 'Type anything...' : 'Kuch bhi likh...'}
+                onFocus={() => typingStart()}
+                onChangeText={(t) => { typingKeystroke(t, inputText); setInputText(t); }}
+                placeholder={t('chat.placeholder')}
                 placeholderTextColor={COLORS.textMuted}
                 multiline
                 maxLength={1000}
@@ -205,17 +212,16 @@ function TypingIndicator() {
   );
 }
 
-function EmptyChat({ language }: { language: string }) {
+function EmptyChat() {
+  const { t } = useTranslation();
   return (
     <View style={styles.emptyChat}>
       <Text style={styles.emptyChatEmoji}>🤜🤛</Text>
       <Text style={styles.emptyChatTitle}>
-        {language === 'english' ? "Bro's here." : 'Bhai aa gaya.'}
+        {t('home.greeting_sub')}
       </Text>
       <Text style={styles.emptyChatSub}>
-        {language === 'english'
-          ? 'Talk about anything. No judgment, ever.'
-          : 'Kuch bhi bol. Koi judgment nahi, kabhi nahi.'}
+        {t('chat.placeholder')}
       </Text>
     </View>
   );

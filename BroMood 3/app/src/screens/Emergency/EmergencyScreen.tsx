@@ -5,6 +5,7 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
+import { useTranslation } from 'react-i18next';
 import { useUserStore } from '../../store/userStore';
 import { COLORS, RADIUS } from '../../constants/theme';
 
@@ -18,6 +19,7 @@ const HELPLINES = [
 
 export default function EmergencyScreen() {
   const navigation = useNavigation();
+  const { t } = useTranslation();
   const { language } = useUserStore();
 
   const call = (number: string) => Linking.openURL(`tel:${number}`);
@@ -40,12 +42,10 @@ export default function EmergencyScreen() {
         <View style={styles.hero}>
           <Text style={styles.heroEmoji}>💙</Text>
           <Text style={styles.heroTitle}>
-            {language === 'english' ? "You're not alone." : 'Tu akela nahi hai.'}
+            {t('emergency.title')}
           </Text>
           <Text style={styles.heroSub}>
-            {language === 'english'
-              ? "These people are here to listen — right now, for free."
-              : 'Ye log abhi sunne ke liye available hain \u2014 bilkul free.'}
+            {t('emergency.sub')}
           </Text>
         </View>
 
@@ -94,18 +94,14 @@ export default function EmergencyScreen() {
           <View style={styles.chatCTAInner}>
             <Ionicons name="chatbubble-ellipses" size={20} color={COLORS.primary} />
             <Text style={styles.chatCTAText}>
-              {language === 'english'
-                ? 'Continue chatting with Bro_AI'
-                : 'Bro_AI se baat karo'}
+              {t('home.chat_cta')}
             </Text>
           </View>
         </TouchableOpacity>
 
         {/* Disclaimer */}
         <Text style={styles.disclaimer}>
-          {language === 'english'
-            ? "BroMood is not a medical device. It's a support companion. For emergencies, please call the helplines above."
-            : 'BroMood doctor nahi hai. Sirf ek dost ki tarah support karta hai. Emergency mein upar wale helplines pe call karo.'}
+          {t('settings.disclaimer')}
         </Text>
 
         <View style={{ height: 40 }} />

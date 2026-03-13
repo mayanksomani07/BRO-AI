@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity, Animated, ActivityIndicator }
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS, RADIUS } from '../constants/theme';
+import { useTranslation } from 'react-i18next';
 
 // ─── Large offline quote bank — all 8 languages ────────────────────────────────
 const OFFLINE_QUOTES: Record<string, string[]> = {
@@ -180,6 +181,7 @@ async function fetchQuoteFromApi(): Promise<string | null> {
 interface Props { language: string; moodScore: number; }
 
 export default function MotivationCard({ language, moodScore }: Props) {
+  const { t } = useTranslation();
   const pool = OFFLINE_QUOTES[language] ?? OFFLINE_QUOTES['hinglish'];
   const [quote, setQuote] = useState(() => pool[Math.floor(Math.random() * pool.length)]);
   const [loading, setLoading] = useState(false);
@@ -196,10 +198,8 @@ export default function MotivationCard({ language, moodScore }: Props) {
     if (loading) return;
     setLoading(true);
 
-    // For English/Hinglish try the API first
-    const apiQuote = (language === 'english' || language === 'hinglish')
-      ? await fetchQuoteFromApi()
-      : null;
+    // Try the API first (offline pool as fallback for all languages)
+    const apiQuote = await fetchQuoteFromApi();
 
     if (apiQuote) {
       animateSwap(apiQuote);
@@ -217,7 +217,7 @@ export default function MotivationCard({ language, moodScore }: Props) {
       <LinearGradient colors={['#0D1B3E', '#0A1228']} style={st.grad}>
         <View style={st.topRow}>
           <Text style={st.label}>
-            {language === 'english' ? "TODAY'S THOUGHT" : 'AAJ KI BAAT'}
+            {t('motivation.today_thought')}
           </Text>
           <View style={[st.apiBadge, { opacity: loading ? 1 : 0.4 }]}>
             <Ionicons name="sparkles" size={10} color={COLORS.primary} />
@@ -233,7 +233,7 @@ export default function MotivationCard({ language, moodScore }: Props) {
             : <Ionicons name="refresh" size={13} color={COLORS.textMuted} />
           }
           <Text style={st.nextText}>
-            {language === 'english' ? 'Another one' : 'Ek aur'}
+            {t('motivation.another_one')}
           </Text>
         </TouchableOpacity>
       </LinearGradient>
@@ -256,6 +256,7 @@ const QUICK_TASKS: Record<string, { text: string; xp: number; emoji: string }[]>
 };
 
 export function TaskCard({ moodScore, language }: { moodScore: number; language: string }) {
+  const { t } = useTranslation();
   const tasks = QUICK_TASKS[language] ?? QUICK_TASKS['hinglish'];
   const task = moodScore < 4 ? tasks[0] : moodScore < 7 ? tasks[1] : tasks[2];
   const [done, setDone] = useState(false);
@@ -263,7 +264,7 @@ export function TaskCard({ moodScore, language }: { moodScore: number; language:
     <View style={st.taskCard}>
       <LinearGradient colors={[COLORS.card, COLORS.surfaceElevated]} style={st.taskGrad}>
         <Text style={st.taskLabel}>
-          {language === 'english' ? "TODAY'S TASK" : 'AAJ KA TASK'}
+          {t('motivation.today_task')}
         </Text>
         <View style={st.taskRow}>
           <Text style={{ fontSize: 22 }}>{task.emoji}</Text>
@@ -274,7 +275,7 @@ export function TaskCard({ moodScore, language }: { moodScore: number; language:
           <TouchableOpacity style={[st.doneBtn, done && st.doneBtnActive]} onPress={() => setDone(true)} disabled={done} activeOpacity={0.8}>
             <Ionicons name={done ? 'checkmark' : 'flag'} size={13} color={done ? '#fff' : COLORS.primary} />
             <Text style={[st.doneBtnText, done && { color: '#fff' }]}>
-              {done ? (language === 'english' ? 'Done!' : 'Ho gaya!') : (language === 'english' ? 'Mark Done' : 'Done Karo')}
+              {done ? t('motivation.done') : t('motivation.mark_done')}
             </Text>
           </TouchableOpacity>
         </View>

@@ -8,16 +8,15 @@ import { View, Text, StyleSheet, TouchableOpacity, Animated } from 'react-native
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS, RADIUS } from '../constants/theme';
+import { useTranslation } from 'react-i18next';
 import { AllSignals } from '../engine/MoodEngine';
 
 interface SignalConfig {
   key: keyof AllSignals;
-  label: string;
-  labelHi: string;
+  labelKey: string;
+  descKey: string;
   icon: string;
   color: string;
-  description: string;
-  descriptionHi: string;
   weight: number;
   dataSource: string;
 }
@@ -25,42 +24,32 @@ interface SignalConfig {
 const SIGNAL_CONFIG: SignalConfig[] = [
   {
     key: 'keystroke',
-    label: 'Typing Dynamics', labelHi: 'Typing Pattern',
+    labelKey: 'signals.keystroke_label', descKey: 'signals.keystroke_desc',
     icon: 'keypad-outline', color: '#60A5FA', weight: 0.25,
-    description: 'Measures your typing speed, backspace rate, and hesitation patterns in the chat/journal. Slow typing + high backspace = low mood signal.',
-    descriptionHi: 'Chat/journal mein typing speed, backspace rate aur ruk-ruk ke likhna measure karta hai.',
     dataSource: 'In-app chat & journal typing',
   },
   {
     key: 'appUsage',
-    label: 'Sleep Quality', labelHi: 'Neend Quality',
+    labelKey: 'signals.appUsage_label', descKey: 'signals.appUsage_desc',
     icon: 'moon-outline', color: '#A78BFA', weight: 0.20,
-    description: 'Tracks sleep quality from your check-in. Poor sleep → depressed circadian rhythm → lower mood score.',
-    descriptionHi: 'Check-in se neend quality track karta hai. Kharab neend = lower mood score.',
     dataSource: 'Daily check-in (sleep question)',
   },
   {
     key: 'circadian',
-    label: 'Circadian Rhythm', labelHi: 'Circadian Rhythm',
+    labelKey: 'signals.circadian_label', descKey: 'signals.circadian_desc',
     icon: 'time-outline', color: '#34D399', weight: 0.20,
-    description: 'Compares your app usage time vs your stated baseline sleep time. Opening app at 3 AM when you normally sleep at 11 PM = 3-point deduction.',
-    descriptionHi: 'App use karne ka time vs tumhara baseline sleep time compare karta hai.',
     dataSource: 'App open timestamps vs onboarding baseline',
   },
   {
     key: 'socialWithdrawal',
-    label: 'Social Contact', labelHi: 'Social Contact',
+    labelKey: 'signals.socialWithdrawal_label', descKey: 'signals.socialWithdrawal_desc',
     icon: 'people-outline', color: '#F59E0B', weight: 0.20,
-    description: 'Measures social engagement from your check-in. Not talking to anyone = withdrawal signal = lower score.',
-    descriptionHi: 'Check-in se social engagement measure karta hai. Kisi se baat nahi = withdrawal signal.',
     dataSource: 'Daily check-in (social question)',
   },
   {
     key: 'journalSentiment',
-    label: 'Journal / Chat', labelHi: 'Journal / Chat',
+    labelKey: 'signals.journalSentiment_label', descKey: 'signals.journalSentiment_desc',
     icon: 'chatbubble-outline', color: '#F472B6', weight: 0.15,
-    description: 'Gemini AI analyzes emotional sentiment from your journal entries and chat messages. Most accurate signal when you write or chat.',
-    descriptionHi: 'Gemini AI journal aur chat se emotional sentiment analyze karta hai.',
     dataSource: 'Journal entries + Bro_AI chat',
   },
 ];
@@ -78,7 +67,7 @@ export default function MoodSignalBreakdown({ signals, language = 'hinglish', ch
 
   if (!signals) return null;
 
-  const isEnglish = language === 'english';
+  const { t } = useTranslation();
 
   const getSignalColor = (score: number) => {
     if (score >= 7.5) return COLORS.success;
@@ -106,10 +95,10 @@ export default function MoodSignalBreakdown({ signals, language = 'hinglish', ch
         >
           <View style={styles.headerLeft}>
             <Text style={styles.title}>
-              {isEnglish ? '🧠 Mood Algorithm' : '🧠 Mood Algorithm'}
+              {t('components.mood_algo')}
             </Text>
             <Text style={styles.subtitle}>
-              {isEnglish ? 'Tap to see what drives your score' : 'Score kaise bana — yahan dekho'}
+              {t('components.tap_to_see')}
             </Text>
           </View>
           <Ionicons
@@ -129,14 +118,14 @@ export default function MoodSignalBreakdown({ signals, language = 'hinglish', ch
               <Text style={styles.checkInEmoji}>⚠️</Text>
               <View style={styles.checkInInfo}>
                 <Text style={styles.checkInTitle}>
-                  {isEnglish ? 'Score is using defaults' : 'Score abhi default values use kar raha hai'}
+                  {t('components.score_default')}
                 </Text>
                 <Text style={styles.checkInSub}>
-                  {isEnglish ? 'Tap to do 30-sec check-in → real score' : 'Check-in karo → accurate score milega'}
+                  {t('components.checkin_prompt')}
                 </Text>
               </View>
               <View style={styles.checkInBtn}>
-                <Text style={styles.checkInBtnText}>{isEnglish ? 'Start' : 'Shuru Karo'}</Text>
+                <Text style={styles.checkInBtnText}>{t('components.start')}</Text>
               </View>
             </LinearGradient>
           </TouchableOpacity>
@@ -161,7 +150,7 @@ export default function MoodSignalBreakdown({ signals, language = 'hinglish', ch
                 <View style={styles.signalLeft}>
                   <Ionicons name={cfg.icon as any} size={14} color={cfg.color} />
                   <Text style={styles.signalLabel} numberOfLines={1}>
-                    {isEnglish ? cfg.label : cfg.labelHi}
+                    {t(cfg.labelKey)}
                   </Text>
                   <Text style={styles.signalWeight}>×{cfg.weight}</Text>
                 </View>
@@ -184,17 +173,17 @@ export default function MoodSignalBreakdown({ signals, language = 'hinglish', ch
               style={styles.detailGrad}
             >
               <Text style={styles.detailTitle}>
-                {isEnglish ? selectedSignal.label : selectedSignal.labelHi}
+                {t(selectedSignal.labelKey)}
               </Text>
               <Text style={styles.detailDesc}>
-                {isEnglish ? selectedSignal.description : selectedSignal.descriptionHi}
+                {t(selectedSignal.descKey)}
               </Text>
               <View style={styles.detailSource}>
                 <Ionicons name="information-circle-outline" size={13} color={COLORS.textMuted} />
                 <Text style={styles.detailSourceText}>{selectedSignal.dataSource}</Text>
               </View>
               <Text style={styles.detailScore}>
-                {isEnglish ? 'Current value' : 'Current value'}: {signals[selectedSignal.key].toFixed(1)}/10
+                {t('components.current_value')}: {signals[selectedSignal.key].toFixed(1)}/10
                 {' '}(weight: {(selectedSignal.weight * 100).toFixed(0)}%)
                 {' '}→ contributes {(signals[selectedSignal.key] * selectedSignal.weight).toFixed(2)} to final score
               </Text>
@@ -206,7 +195,7 @@ export default function MoodSignalBreakdown({ signals, language = 'hinglish', ch
         {expanded && (
           <View style={styles.formula}>
             <Text style={styles.formulaTitle}>
-              {isEnglish ? 'Score Formula' : 'Score Formula'}
+              {t('components.score_formula')}
             </Text>
             <Text style={styles.formulaText}>
               ({signals.keystroke.toFixed(1)}×0.25) + ({signals.appUsage.toFixed(1)}×0.20) + ({signals.circadian.toFixed(1)}×0.20) + ({signals.socialWithdrawal.toFixed(1)}×0.20) + ({signals.journalSentiment.toFixed(1)}×0.15)

@@ -76,6 +76,11 @@ export const useUserStore = create<UserStore>((set, get) => ({
       if (raw) {
         const parsed = JSON.parse(raw) as Partial<UserProfile>;
         set(s => ({ ...s, ...parsed }));
+        // Sync i18n to the saved language immediately
+        if (parsed.language) {
+          const { default: i18n } = await import('../i18n');
+          await i18n.changeLanguage(parsed.language);
+        }
       }
     } catch { /* first launch */ }
   },

@@ -213,8 +213,8 @@ export default function HomeScreen({ navigation }: { navigation?: any }) {
 
   // Exactly same task list as TasksScreen
   const baseTasks  = getAvailableTasks(score);
-  const doneCount  = baseTasks.filter(t => completedIds.has(t.id)).length;
-  const allBaseDone = baseTasks.length > 0 && baseTasks.every(t => completedIds.has(t.id));
+  const doneCount  = baseTasks.filter(task => completedIds.has(task.id)).length;
+  const allBaseDone = baseTasks.length > 0 && baseTasks.every(task => completedIds.has(task.id));
 
   const loadData = useCallback(async () => {
     try {
@@ -235,7 +235,7 @@ export default function HomeScreen({ navigation }: { navigation?: any }) {
         prevLevel.current = newLvl;
         setStats({ xp: s.total_xp, level: newLvl, streak: s.streak_days });
       }
-      if (baseTasks.length > 0 && baseTasks.every(t => idSet.has(t.id)) && wantBonus) {
+      if (baseTasks.length > 0 && baseTasks.every(task => idSet.has(task.id)) && wantBonus) {
         setBonusTasks(prev => prev.length > 0 ? prev : getNextBonusTasks(idSet, 3));
       }
     } catch (e) { console.warn('HomeScreen loadData:', e); }
@@ -260,7 +260,7 @@ export default function HomeScreen({ navigation }: { navigation?: any }) {
   };
 
   const loadMoreBonus = () => {
-    const seen = new Set([...completedIds, ...bonusTasks.map(t => t.id)]);
+    const seen = new Set([...completedIds, ...bonusTasks.map(task => task.id)]);
     setBonusTasks(getNextBonusTasks(seen, 3));
     setBonusPage(p => p + 1);
   };
@@ -393,8 +393,8 @@ export default function HomeScreen({ navigation }: { navigation?: any }) {
               </View>
             )}
             <View style={s.dotRow}>
-              {baseTasks.map(t => (
-                <View key={t.id} style={[s.dot, completedIds.has(t.id) && s.dotDone]} />
+              {baseTasks.map(task => (
+                <View key={task.id} style={[s.dot, completedIds.has(task.id) && s.dotDone]} />
               ))}
             </View>
           </View>

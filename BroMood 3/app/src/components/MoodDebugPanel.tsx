@@ -17,6 +17,7 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS, RADIUS } from '../constants/theme';
+import { useTranslation } from 'react-i18next';
 import { AllSignals } from '../engine/MoodEngine';
 import { SIGNAL_WEIGHTS } from '../engine/BiomarkerEngine';
 
@@ -25,6 +26,7 @@ type IonName = keyof typeof Ionicons.glyphMap;
 interface SignalMeta {
   key: keyof AllSignals;
   newKey: 'typing' | 'sleep' | 'circadian' | 'social' | 'journal';
+  labelKey: string;
   label: string;
   icon: IonName;
   color: string;
@@ -41,6 +43,7 @@ const SIGNALS: SignalMeta[] = [
   {
     key: 'keystroke',
     newKey: 'typing',
+    labelKey: 'signals.keystroke_label',
     label: 'Typing Dynamics',
     icon: 'keypad-outline',
     color: '#60A5FA',
@@ -55,6 +58,7 @@ const SIGNALS: SignalMeta[] = [
   {
     key: 'appUsage',
     newKey: 'sleep',
+    labelKey: 'signals.appUsage_label',
     label: 'Sleep Quality',
     icon: 'moon-outline',
     color: '#A78BFA',
@@ -69,6 +73,7 @@ const SIGNALS: SignalMeta[] = [
   {
     key: 'circadian',
     newKey: 'circadian',
+    labelKey: 'signals.circadian_label',
     label: 'Circadian Rhythm',
     icon: 'time-outline',
     color: '#34D399',
@@ -83,6 +88,7 @@ const SIGNALS: SignalMeta[] = [
   {
     key: 'socialWithdrawal',
     newKey: 'social',
+    labelKey: 'signals.socialWithdrawal_label',
     label: 'Social Connection',
     icon: 'people-outline',
     color: '#F59E0B',
@@ -97,6 +103,7 @@ const SIGNALS: SignalMeta[] = [
   {
     key: 'journalSentiment',
     newKey: 'journal',
+    labelKey: 'signals.journalSentiment_label',
     label: 'Journal / Chat Sentiment',
     icon: 'document-text-outline',
     color: '#F472B6',
@@ -119,7 +126,7 @@ interface Props {
 export default function MoodDebugPanel({ signals, moodScore, language = 'hinglish' }: Props) {
   const [expanded, setExpanded] = useState(false);
   const [expandedSignal, setExpandedSignal] = useState<string | null>(null);
-  const isEng = language === 'english';
+  const { t } = useTranslation();
 
   if (!expanded) {
     return (
@@ -127,7 +134,7 @@ export default function MoodDebugPanel({ signals, moodScore, language = 'hinglis
         <View style={s.collapsedLeft}>
           <Ionicons name="analytics-outline" size={15} color={COLORS.primary} />
           <Text style={s.collapsedTxt}>
-            {isEng ? 'Signal breakdown — why this score?' : 'Score kaise aaya? — signals dekho'}
+            {t('components.signal_breakdown')}
           </Text>
         </View>
         <Ionicons name="chevron-down" size={14} color={COLORS.textMuted} />
@@ -154,8 +161,8 @@ export default function MoodDebugPanel({ signals, moodScore, language = 'hinglis
 
   const getConfidenceLabel = (sig: SignalMeta): { label: string; color: string } => {
     const v = getVal(sig);
-    if (v === 5.0) return { label: isEng ? 'No data yet' : 'Data nahi aaya', color: COLORS.textMuted };
-    return { label: isEng ? 'Live' : 'Live', color: COLORS.success };
+    if (v === 5.0) return { label: t('components.no_data'), color: COLORS.textMuted };
+    return { label: t('components.live'), color: COLORS.success };
   };
 
   return (
@@ -167,7 +174,7 @@ export default function MoodDebugPanel({ signals, moodScore, language = 'hinglis
           <View style={s.panelHeaderLeft}>
             <Ionicons name="analytics" size={17} color={COLORS.primary} />
             <Text style={s.panelTitle}>
-              {isEng ? 'Mood Algorithm — Live Signals' : 'Mood Algorithm — Live Signals'}
+              {t('components.mood_algo')}
             </Text>
           </View>
           <Ionicons name="chevron-up" size={14} color={COLORS.textMuted} />
@@ -176,21 +183,19 @@ export default function MoodDebugPanel({ signals, moodScore, language = 'hinglis
         {/* Formula visual */}
         <View style={s.formulaBox}>
           <Text style={s.formulaLabel}>
-            {isEng ? 'WEIGHTED FORMULA' : 'FORMULA'}
+            {t('components.formula')}
           </Text>
           <Text style={s.formulaText}>
             mood_score = typing×0.25 + sleep×0.20 + circadian×0.20 + social×0.20 + journal×0.15
           </Text>
           <View style={s.formulaResult}>
-            <Text style={s.formulaResultLabel}>{isEng ? 'Raw total:' : 'Raw total:'}</Text>
+            <Text style={s.formulaResultLabel}>{t('components.raw_total')}</Text>
             <Text style={s.formulaResultVal}>{total.toFixed(2)}</Text>
-            <Text style={s.formulaResultLabel}>{isEng ? '→ Smoothed:' : '→ Smoothed:'}</Text>
+            <Text style={s.formulaResultLabel}>{t('components.smoothed')}</Text>
             <Text style={[s.formulaResultVal, { color: '#60A5FA' }]}>{moodScore.toFixed(1)}</Text>
           </View>
           <Text style={s.smoothingNote}>
-            {isEng
-              ? 'Temporal smoothing: 70% today + 30% yesterday (prevents single bad event from crashing score)'
-              : 'Temporal smoothing: 70% aaj + 30% kal (ek bura din score crash nahi karta)'}
+            {t('components.smoothing_note')}
           </Text>
         </View>
 
@@ -215,7 +220,7 @@ export default function MoodDebugPanel({ signals, moodScore, language = 'hinglis
                 </View>
                 <View style={s.sigBody}>
                   <View style={s.sigTitleRow}>
-                    <Text style={s.sigLabel}>{sig.label}</Text>
+                    <Text style={s.sigLabel}>{t(sig.labelKey)}</Text>
                     <View style={[s.confBadge, { backgroundColor: conf.color + '20' }]}>
                       <Text style={[s.confTxt, { color: conf.color }]}>{conf.label}</Text>
                     </View>
@@ -238,15 +243,15 @@ export default function MoodDebugPanel({ signals, moodScore, language = 'hinglis
               {/* Expanded detail */}
               {isExpSig && (
                 <View style={s.sigDetail}>
-                  <DetailRow label={isEng ? 'Measures' : 'Kya measure karta hai'} value={sig.whatItMeasures} />
-                  <DetailRow label={isEng ? 'Data source' : 'Data kahan se'} value={sig.howWeGetIt} color="#60A5FA" />
-                  <DetailRow label={isEng ? 'Low score means' : 'Low score matlab'} value={sig.lowMeans} color={COLORS.danger} />
-                  <DetailRow label={isEng ? 'High score means' : 'High score matlab'} value={sig.highMeans} color={COLORS.success} />
+                  <DetailRow label={t('components.measures')} value={sig.whatItMeasures} />
+                  <DetailRow label={t('components.data_source')} value={sig.howWeGetIt} color="#60A5FA" />
+                  <DetailRow label={t('components.low_means')} value={sig.lowMeans} color={COLORS.danger} />
+                  <DetailRow label={t('components.high_means')} value={sig.highMeans} color={COLORS.success} />
                   {sig.nativeOnly && (
                     <View style={s.nativeNote}>
                       <Ionicons name="build-outline" size={11} color={COLORS.warning} />
                       <Text style={s.nativeNoteTxt}>
-                        {isEng ? 'Native build adds: ' : 'Native build mein aur milega: '}{sig.nativeOnly}
+                        {t('components.native_adds')}{sig.nativeOnly}
                       </Text>
                     </View>
                   )}
@@ -261,12 +266,10 @@ export default function MoodDebugPanel({ signals, moodScore, language = 'hinglis
           <Ionicons name="information-circle-outline" size={15} color={COLORS.primary} />
           <View style={{ flex: 1 }}>
             <Text style={s.infoTitle}>
-              {isEng ? 'Why does it start at ~8.4?' : 'Pehle 8.4 kyun dikhta hai?'}
+              {t('components.why_8_4')}
             </Text>
             <Text style={s.infoBody}>
-              {isEng
-                ? 'Without real data, sleep/social/circadian default to optimistic values (no late nights detected = high score). Typing and journal default to neutral 5.0. Result: weighted avg ≈ 7.8 → drifts to 8.4 with temporal smoothing from a prior session.\n\nFix: Do your daily check-in → all signals update from real answers → accurate score.'
-                : 'Real data ke bina, sleep/social/circadian optimistic defaults lete hain (koi late night detect nahi = high score). Typing aur journal neutral 5.0 pe rahte hain. Result: weighted avg ≈ 7.8 → prior session se smooth hokar 8.4 ho jaata hai.\n\nFix: Daily check-in karo → sab signals real answers se update honge → accurate score.'}
+              {t('components.why_8_4_body')}
             </Text>
           </View>
         </View>
@@ -274,7 +277,7 @@ export default function MoodDebugPanel({ signals, moodScore, language = 'hinglis
         {/* Expo Go vs Native */}
         <View style={s.capabilityBox}>
           <Text style={s.capabilityTitle}>
-            {isEng ? 'EXPO GO vs NATIVE BUILD' : 'EXPO GO vs NATIVE BUILD'}
+            {t('components.expo_vs_native')}
           </Text>
           {[
             { label: 'In-app typing (chat/journal)', works: true },

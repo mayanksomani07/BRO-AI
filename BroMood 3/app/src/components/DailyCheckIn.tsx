@@ -18,6 +18,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { COLORS, RADIUS } from '../constants/theme';
+import { useTranslation } from 'react-i18next';
 import { saveCheckIn } from '../engine/SignalCollector';
 
 interface Question {
@@ -86,6 +87,7 @@ interface Props {
 }
 
 export default function DailyCheckIn({ visible, onComplete, onDismiss, language = 'hinglish' }: Props) {
+  const { t } = useTranslation();
   const [step, setStep] = useState(0);
   const [answers, setAnswers] = useState<Record<string, number>>({});
   const [fadeAnim] = useState(new Animated.Value(1));
@@ -142,10 +144,10 @@ export default function DailyCheckIn({ visible, onComplete, onDismiss, language 
             <View style={styles.header}>
               <View>
                 <Text style={styles.headerTitle}>
-                  {language === 'english' ? "Today's Check-in" : 'Aaj ka Check-in'}
+                  {t('checkin.title')}
                 </Text>
                 <Text style={styles.headerSub}>
-                  {language === 'english' ? '30 seconds to calibrate your mood' : '30 seconds mein mood calibrate karein'}
+                  {t('checkin.sub')}
                 </Text>
               </View>
               <TouchableOpacity onPress={onDismiss} style={styles.closeBtn}>
@@ -172,7 +174,7 @@ export default function DailyCheckIn({ visible, onComplete, onDismiss, language 
               <Text style={styles.qEmoji}>{q.emoji}</Text>
               <Text style={styles.qText}>{q.question}</Text>
               <Text style={styles.qSignalLabel}>
-                {language === 'english' ? `Measures: ${q.signal.replace(/([A-Z])/g, ' $1')}` : `Signal: ${q.signal}`}
+                {`${t('checkin.measures')}${q.signal.replace(/([A-Z])/g, ' $1')}`}
               </Text>
             </Animated.View>
 
