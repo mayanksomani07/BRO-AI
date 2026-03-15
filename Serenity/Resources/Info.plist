@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
+  "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+
+    <!-- Background Task Identifiers — ALL THREE required -->
+    <key>BGTaskSchedulerPermittedIdentifiers</key>
+    <array>
+        <string>com.serenity.collect</string>
+        <string>com.serenity.score</string>
+        <string>com.serenity.risk</string>
+    </array>
+
+    <!-- Background Modes -->
+    <key>UIBackgroundModes</key>
+    <array>
+        <string>fetch</string>
+        <string>processing</string>
+        <string>location</string>
+    </array>
+
+    <!-- Privacy Usage Descriptions (iOS will crash without these) -->
+
+    <key>NSHealthShareUsageDescription</key>
+    <string>Serenity reads your sleep data to detect whether irregular sleep may be affecting your wellbeing. This data never leaves your device.</string>
+
+    <key>NSHealthUpdateUsageDescription</key>
+    <string>Serenity does not write any health data.</string>
+
+    <!-- Required when HealthKit capability is enabled on iPhone 17 -->
+    <key>NSFallDetectionUsageDescription</key>
+    <string>Serenity does not use fall detection. This key is required by iOS when HealthKit is enabled.</string>
+
+    <key>NSLocationWhenInUseUsageDescription</key>
+    <string>Serenity detects whether you left home today (yes or no). No GPS coordinates are stored. Ever.</string>
+
+    <key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+    <string>Serenity uses background location to detect if you left home while the app is not open. Only a yes/no flag is stored — no coordinates.</string>
+
+    <key>NSMicrophoneUsageDescription</key>
+    <string>Serenity measures ambient noise level (decibels only) to detect prolonged silence, which can indicate social withdrawal. No audio is ever recorded or stored.</string>
+
+    <key>NSMotionUsageDescription</key>
+    <string>Serenity uses motion data to count your steps and detect long periods of physical inactivity — both signals linked to mood changes.</string>
+
+    <key>NSContactsUsageDescription</key>
+    <string>Serenity counts how many different contacts you've been in touch with recently. Names and contact details are never read or stored.</string>
+
+    <!-- HealthKit Capability -->
+    <key>com.apple.developer.healthkit</key>
+    <true/>
+
+    <!-- App Transport Security — no network calls ever -->
+    <key>NSAppTransportSecurity</key>
+    <dict>
+        <key>NSAllowsArbitraryLoads</key>
+        <false/>
+    </dict>
+
+    <!-- Standard iOS Keys -->
+    <key>CFBundleName</key>
+    <string>Serenity</string>
+
+    <key>CFBundleDisplayName</key>
+    <string>Serenity</string>
+
+    <key>CFBundleIdentifier</key>
+    <string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
+
+    <key>CFBundleVersion</key>
+    <string>1</string>
+
+    <key>CFBundleShortVersionString</key>
+    <string>1.0.0</string>
+
+    <key>LSRequiresIPhoneOS</key>
+    <true/>
+
+    <key>UIRequiredDeviceCapabilities</key>
+    <array>
+        <string>arm64</string>
+    </array>
+
+    <key>UISupportedInterfaceOrientations</key>
+    <array>
+        <string>UIInterfaceOrientationPortrait</string>
+    </array>
+
+    <key>UILaunchScreen</key>
+    <dict/>
+
+</dict>
+</plist>

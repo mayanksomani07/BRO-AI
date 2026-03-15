@@ -1,0 +1,240 @@
+# Serenity — Complete Setup Guide
+# Plain-English, Step by Step
+# Estimated time: 45–60 minutes (mostly waiting for Xcode to index)
+
+==============================================================
+PART 1 — TRAIN THE AI MODEL ON YOUR MAC (takes ~2 minutes)
+==============================================================
+
+Step 1: Open Terminal on your Mac
+  - Press Cmd+Space, type "Terminal", press Enter
+
+Step 2: Install the Python libraries
+  Copy and paste this entire block into Terminal, press Enter:
+
+    pip3 install scikit-learn coremltools numpy pandas
+
+  Wait for it to finish (may take a few minutes the first time)
+
+Step 3: Run the training script
+  In Terminal, navigate to where you saved the project files.
+  For example, if you put them in your Downloads folder:
+
+    cd ~/Downloads/Serenity/Resources
+    python3 train_mood_model.py
+
+  You will see output like:
+    Training on 2400 samples...
+    Test MAE: 3.xx points
+    ✅ Saved: MoodScoreModel.mlmodel
+
+  You now have a file called MoodScoreModel.mlmodel in that folder.
+  → KEEP THIS FILE. You need it in Step 9.
+
+==============================================================
+PART 2 — CREATE THE XCODE PROJECT (takes ~5 minutes)
+==============================================================
+
+Step 4: Open Xcode
+  - If you don't have it: open App Store, search "Xcode", install it (it's free, ~7 GB)
+  - Open Xcode
+
+Step 5: Create a new project
+  - Click "Create New Project"
+  - Choose: iOS → App → click Next
+  - Fill in:
+      Product Name:    Serenity
+      Team:            (select your Apple ID — add one if needed via Xcode → Settings → Accounts)
+      Organization ID: com.yourname   (e.g. com.rahul or com.priya — anything works)
+      Bundle ID will become: com.yourname.serenity  ← remember this
+      Interface:       SwiftUI
+      Language:        Swift
+  - Click Next, choose where to save it (e.g. Desktop), click Create
+
+Step 6: Delete the template files Xcode created
+  In the left panel (file browser):
+  - Right-click ContentView.swift → Delete → Move to Trash
+  - Right-click SerenityApp.swift (if it exists) → Delete → Move to Trash
+  - Keep the Assets.xcassets file
+
+==============================================================
+PART 3 — ADD YOUR SOURCE FILES (takes ~10 minutes)
+==============================================================
+
+Step 7: Create folder groups in Xcode
+  Right-click the "Serenity" folder in the left panel → New Group
+  Create these 7 groups:
+    App
+    Signals
+    Database
+    ML
+    Background
+    UI
+    Helpers
+    Resources
+
+Step 8: Add each Swift file to its folder
+  For each file below:
+  - Right-click the matching group → "Add Files to Serenity"
+  - Navigate to the file → click Add
+  - Make sure "Add to target: Serenity" is checked
+
+  App/
+    SerenityApp.swift
+    AppDelegate.swift
+
+  Signals/
+    SignalCollector.swift
+    DeviceUsageCollector.swift
+    SleepCollector.swift
+    CommMetaCollector.swift
+    AmbientCollector.swift
+    SignalAggregator.swift
+
+  Database/
+    DatabaseManager.swift
+    DailyFeatureVector.swift
+
+  ML/
+    MoodScoreEngine.swift
+    RiskEvaluator.swift
+
+  Background/
+    BackgroundTaskManager.swift
+    InterventionManager.swift
+
+  UI/
+    DashboardView.swift
+    CrisisModalView.swift
+    SettingsView.swift
+
+  Helpers/
+    KeychainHelper.swift
+    Extensions.swift
+
+  Resources/
+    PrivacyInfo.xcprivacy   ← add this to the Resources group
+
+Step 9: Add the CoreML model
+  - Find MoodScoreModel.mlmodel (from Step 3)
+  - Drag it into the ML/ group in Xcode
+  - When the dialog appears: check "Add to target: Serenity" → click Finish
+
+Step 10: Replace Info.plist
+  - In the left panel, find Info.plist
+  - Right-click → Show in Finder
+  - Replace it with the Info.plist from the Resources folder
+  - Back in Xcode, click on Info.plist to make sure it opened correctly
+
+==============================================================
+PART 4 — ADD THE GRDB PACKAGE (takes ~3 minutes)
+==============================================================
+
+Step 11: Add GRDB.swift via Swift Package Manager
+  - In Xcode menu: File → Add Package Dependencies
+  - In the search bar at top right, paste:
+      https://github.com/groue/GRDB.swift
+  - Press Enter, wait for it to load
+  - Click "Add Package"
+  - In the next screen, make sure "GRDB" is checked → click Add Package
+  - Wait for Xcode to download it (~30 seconds)
+
+==============================================================
+PART 5 — ENABLE CAPABILITIES (takes ~5 minutes)
+==============================================================
+
+Step 12: Turn on required capabilities
+  - Click the blue "Serenity" project icon at the top of the left panel
+  - Click your app target "Serenity" in the middle panel
+  - Click the "Signing & Capabilities" tab
+
+  Click "+ Capability" and add each of these:
+    ✅ HealthKit
+    ✅ Background Modes
+       → Check: "Background fetch"
+       → Check: "Background processing"
+       → Check: "Location updates"
+    ✅ Push Notifications  (needed for UNUserNotification)
+
+  Xcode will add the right entitlements automatically.
+
+==============================================================
+PART 6 — BUILD & RUN ON YOUR IPHONE 17 (takes ~5 minutes)
+==============================================================
+
+Step 13: Connect your iPhone
+  - Plug your iPhone 17 into your Mac with a USB cable
+  - On your iPhone: tap "Trust This Computer" if asked
+  - Enter your iPhone passcode
+
+Step 14: Select your iPhone as the target
+  - At the top of Xcode, click where it says a device name (e.g. "iPhone 15 Pro")
+  - Select your iPhone 17 from the list
+
+Step 15: Build and run
+  - Press the ▶ Play button (top-left in Xcode), or press Cmd+R
+  - First time: Xcode will ask you to trust the developer certificate on your iPhone
+    → On your iPhone: Settings → General → VPN & Device Management
+    → Tap your Apple ID → Tap "Trust"
+  - Press ▶ again — the app will install and open on your iPhone!
+
+==============================================================
+PART 7 — TEST IT WORKS
+==============================================================
+
+Step 16: Test signal collection
+  - Open the app on your iPhone — you'll see the Dashboard
+  - Tap "Settings" tab → tap "Collect signals now"
+  - Switch back to Dashboard — you should see "1 day of data collected"
+
+Step 17: Test the intervention notification
+  - In the app: tap "Settings" → scroll to the Debug section (only visible during development)
+  - Tap "Test Intervention Notification"
+  - Lock your phone — you should receive a notification in ~1 second
+  - Tap it to open the Crisis Modal
+
+Step 18: Trigger background tasks manually (advanced test)
+  - In Xcode, while the app is running, go to the debug console at the bottom
+  - Paste this and press Enter to simulate the daily collection task:
+      e -l objc -- (void)[[BGTaskScheduler sharedScheduler] _simulateLaunchForTaskWithIdentifier:@"com.serenity.collect"]
+
+==============================================================
+TROUBLESHOOTING
+==============================================================
+
+❌ "No such module 'GRDB'"
+  → File → Add Package Dependencies → re-add GRDB.swift URL
+
+❌ "Signing certificate" error
+  → Xcode → Settings → Accounts → add your Apple ID
+  → Back in Signing & Capabilities → set Team to your Apple ID
+
+❌ "MoodScoreModel not found" in console
+  → The app will still work using the built-in heuristic formula
+  → To fix: make sure MoodScoreModel.mlmodel is in the ML/ group
+    AND "Add to target: Serenity" was checked
+
+❌ App crashes immediately
+  → Check the console in Xcode for a red error message
+  → Most common: Info.plist missing a privacy description key
+  → Make sure you replaced Info.plist in Step 10
+
+❌ "Untrusted Developer" on iPhone
+  → Settings → General → VPN & Device Management → tap your Apple ID → Trust
+
+==============================================================
+WHAT HAPPENS AUTOMATICALLY AFTER THIS
+==============================================================
+
+Every night ~2am:
+  → iOS wakes the app briefly, collects all signals, stores them encrypted
+
+Every Sunday ~3am:
+  → iOS runs the ML model on the past 7 days, computes your Mood Score
+
+If score is RED for 3 weeks declining:
+  → You receive a gentle notification: "Checking in on you"
+
+Your data never leaves your iPhone. Ever.
+
+==============================================================
