@@ -1,8 +1,8 @@
 // SettingsView.swift
-// Signal source toggles, data deletion, and app info.
+// Signal source toggles, data management, diagnostics links, and app info.
 
 import SwiftUI
-import HealthKit
+import Combine
 
 struct SettingsView: View {
 
@@ -18,6 +18,7 @@ struct SettingsView: View {
     var body: some View {
         NavigationStack {
             Form {
+                diagnosticsSection       // ← new
                 signalSection
                 dataSection
                 aboutSection
@@ -46,7 +47,67 @@ struct SettingsView: View {
         }
     }
 
-    // MARK: - Sections
+    // MARK: - Diagnostics section (new)
+
+    var diagnosticsSection: some View {
+        Section {
+            NavigationLink(destination: SignalDebugView()) {
+                Label {
+                    VStack(alignment: .leading) {
+                        Text("Signal Inspector")
+                        Text("View every collected signal value in real time.")
+                            .font(.caption).foregroundColor(.secondary)
+                    }
+                } icon: {
+                    Image(systemName: "antenna.radiowaves.left.and.right")
+                        .foregroundColor(.indigo)
+                }
+            }
+
+            NavigationLink(destination: ModelAccuracyView()) {
+                Label {
+                    VStack(alignment: .leading) {
+                        Text("Model Accuracy")
+                        Text("Heuristic vs CoreML scores, PHQ-9 ground truth.")
+                            .font(.caption).foregroundColor(.secondary)
+                    }
+                } icon: {
+                    Image(systemName: "chart.xyaxis.line")
+                        .foregroundColor(.purple)
+                }
+            }
+
+            NavigationLink(destination: TypingCalibrationView()) {
+                Label {
+                    VStack(alignment: .leading) {
+                        Text("Typing Calibration")
+                        Text("60-second test to measure your real WPM and error rate.")
+                            .font(.caption).foregroundColor(.secondary)
+                    }
+                } icon: {
+                    Image(systemName: "keyboard")
+                        .foregroundColor(.teal)
+                }
+            }
+
+            NavigationLink(destination: SocialReportView()) {
+                Label {
+                    VStack(alignment: .leading) {
+                        Text("Social Media Report")
+                        Text("Log today's social media usage time.")
+                            .font(.caption).foregroundColor(.secondary)
+                    }
+                } icon: {
+                    Image(systemName: "person.2.wave.2")
+                        .foregroundColor(.orange)
+                }
+            }
+        } header: {
+            Text("Diagnostics")
+        }
+    }
+
+    // MARK: - Signal sources
 
     var signalSection: some View {
         Section {
@@ -104,6 +165,8 @@ struct SettingsView: View {
         }
     }
 
+    // MARK: - Data section
+
     var dataSection: some View {
         Section {
             HStack {
@@ -136,28 +199,26 @@ struct SettingsView: View {
         }
     }
 
+    // MARK: - About section
+
     var aboutSection: some View {
         Section("About Serenity") {
             HStack {
                 Text("Version")
                 Spacer()
-                Text("1.0.0")
-                    .foregroundColor(.secondary)
+                Text("1.0.0").foregroundColor(.secondary)
             }
             HStack {
                 Text("Model")
                 Spacer()
-                Text("On-device CoreML")
-                    .foregroundColor(.secondary)
+                Text("On-device CoreML").foregroundColor(.secondary)
             }
             HStack {
                 Text("Network calls")
                 Spacer()
-                Text("Zero 🔒")
-                    .foregroundColor(.green)
+                Text("Zero 🔒").foregroundColor(.green)
             }
             Link("iCall Helpline", destination: URL(string: "https://icallhelpline.org")!)
-            Link("Privacy Policy", destination: URL(string: "https://example.com/privacy")!)
         }
     }
 
