@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>LSApplicationQueriesSchemes</key>
+	<array>
+		<string>whatsapp</string>
+		<string>instagram</string>
+		<string>tg</string>
+		<string>fb</string>
+		<string>twitter</string>
+		<string>snapchat</string>
+		<string>snssdk1233</string>
+		<string>youtube</string>
+		<string>linkedin</string>
+		<string>reddit</string>
+		<string>pinterest</string>
+		<string>discord</string>
+		<string>barcelona</string>
+		<string>bereal</string>
+		<string>tumblr</string>
+		<string>sgnl</string>
+		<string>viber</string>
+		<string>weixin</string>
+		<string>clubhouse</string>
+		<string>mastodon</string>
+	</array>
+	<key>BGTaskSchedulerPermittedIdentifiers</key>
+	<array>
+		<string>com.broai.socialdatatracker.refresh</string>
+	</array>
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>fetch</string>
+		<string>processing</string>
+	</array>
+	<key>NSLocalNetworkUsageDescription</key>
+	<string>Used to monitor network interface statistics for data usage tracking.</string>
+	<key>CFBundleDisplayName</key>
+	<string>Social Data Tracker</string>
+</dict>
+</plist>
