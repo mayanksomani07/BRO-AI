@@ -26,11 +26,16 @@ struct SocialDataTrackerApp: App {
             }
             if phase == .background {
                 BackgroundRefreshScheduler.schedule()
+                BackgroundRefreshScheduler.scheduleMidnight()
             }
         }
         .backgroundTask(.appRefresh("com.broai.socialdatatracker.refresh")) {
             dataUsageStore.record()
             BackgroundRefreshScheduler.schedule()
+        }
+        .backgroundTask(.appRefresh("com.broai.socialdatatracker.midnight")) {
+            dataUsageStore.captureMidnightBaseline()
+            BackgroundRefreshScheduler.scheduleMidnight()
         }
     }
 }

@@ -28,6 +28,7 @@
 	<key>BGTaskSchedulerPermittedIdentifiers</key>
 	<array>
 		<string>com.broai.socialdatatracker.refresh</string>
+		<string>com.broai.socialdatatracker.midnight</string>
 	</array>
 	<key>UIBackgroundModes</key>
 	<array>

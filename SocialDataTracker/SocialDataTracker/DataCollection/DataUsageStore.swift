@@ -8,13 +8,13 @@ class DataUsageStore: ObservableObject {
     @Published var lastUpdated: Date = Date()
 
     private let key = "interface_snapshots"
+    private let midnightBaselineKey = "midnight_baseline_v2"
     private let maxSnapshots = 5000
     private var timer: Timer?
-    private var sessionBaseline: InterfaceSnapshot?
 
     init() {
         load()
-        sessionBaseline = NetworkSampler.currentSnapshot()
+        saveMidnightBaselineIfNeeded()
         record()
         startLivePolling()
     }
@@ -33,6 +33,14 @@ class DataUsageStore: ObservableObject {
             DispatchQueue.main.async {
                 self.liveSnapshot = snap
                 self.lastUpdated = Date()
+                // Reset midnight baseline when the day rolls over
+                var cal = Calendar.current
+                cal.timeZone = TimeZone.current
+                let todayMidnight = cal.startOfDay(for: Date())
+                if let mb = self.midnightBaseline,
+                   cal.startOfDay(for: mb.timestamp) < todayMidnight {
+                    self.saveMidnightBaselineIfNeeded()
+                }
             }
             // Record into persistent store every 60s
             if let last = self.snapshots.last,
@@ -55,26 +63,76 @@ class DataUsageStore: ObservableObject {
         print("[DataUsage] WiFi RX: \(snapshot.wifiReceived / 1_048_576) MB  Cell RX: \(snapshot.cellularReceived / 1_048_576) MB")
     }
 
-    // MARK: - Today's usage (delta since midnight or first today snapshot)
+    // MARK: - Midnight baseline
+    // Stores the kernel counter value captured at/near 12:00 AM of today.
+    // On first launch of a new day, we save the current snapshot tagged with
+    // the midnight timestamp so deltas are always "since 12:00 AM local time".
 
-    func todayUsage() -> (wifiMB: Double, cellularMB: Double) {
-        let todayStart = Calendar.current.startOfDay(for: Date())
-        let todaySnaps = snapshots.filter { $0.timestamp >= todayStart }
+    @Published var midnightBaseline: InterfaceSnapshot?
 
-        let baseline: InterfaceSnapshot
-        if let first = todaySnaps.first {
-            baseline = first
-        } else if let sb = sessionBaseline {
-            baseline = sb
-        } else {
-            return (0, 0)
+    func saveMidnightBaselineIfNeeded() {
+        var cal = Calendar.current
+        cal.timeZone = TimeZone.current
+        let todayMidnight = cal.startOfDay(for: Date())  // 12:00 AM today in local tz
+
+        // Check if we already have a baseline saved for today
+        if let data = UserDefaults.standard.data(forKey: midnightBaselineKey),
+           let saved = try? JSONDecoder().decode(InterfaceSnapshot.self, from: data) {
+            let savedMidnight = cal.startOfDay(for: saved.timestamp)
+            if savedMidnight == todayMidnight {
+                // Already have today's baseline — use it
+                midnightBaseline = saved
+                return
+            }
         }
 
+        // No baseline for today yet — capture current counters but stamp it
+        // at 12:00 AM so all delta calculations treat it as "since midnight".
+        var fresh = NetworkSampler.currentSnapshot()
+        fresh = InterfaceSnapshot(
+            timestamp:        todayMidnight,   // stamp at midnight, not app-launch time
+            wifiSent:         fresh.wifiSent,
+            wifiReceived:     fresh.wifiReceived,
+            cellularSent:     fresh.cellularSent,
+            cellularReceived: fresh.cellularReceived
+        )
+        midnightBaseline = fresh
+        if let data = try? JSONEncoder().encode(fresh) {
+            UserDefaults.standard.set(data, forKey: midnightBaselineKey)
+        }
+    }
+
+    // Called from background task near midnight — force-captures a fresh baseline for the new day.
+    func captureMidnightBaseline() {
+        var cal = Calendar.current
+        cal.timeZone = TimeZone.current
+        let todayMidnight = cal.startOfDay(for: Date())
+        let fresh = NetworkSampler.currentSnapshot()
+        let baseline = InterfaceSnapshot(
+            timestamp:        todayMidnight,
+            wifiSent:         fresh.wifiSent,
+            wifiReceived:     fresh.wifiReceived,
+            cellularSent:     fresh.cellularSent,
+            cellularReceived: fresh.cellularReceived
+        )
+        DispatchQueue.main.async {
+            self.midnightBaseline = baseline
+        }
+        if let data = try? JSONEncoder().encode(baseline) {
+            UserDefaults.standard.set(data, forKey: midnightBaselineKey)
+        }
+        record()
+    }
+
+    // MARK: - Today's usage (delta since 12:00 AM local time)
+
+    func todayUsage() -> (wifiMB: Double, cellularMB: Double) {
+        guard let baseline = midnightBaseline else { return (0, 0) }
         let current = liveSnapshot
-        let wifiMB  = Double(safeDelta(current.wifiReceived  + current.wifiSent,
-                                       baseline.wifiReceived + baseline.wifiSent))  / 1_048_576
-        let cellMB  = Double(safeDelta(current.cellularReceived  + current.cellularSent,
-                                       baseline.cellularReceived + baseline.cellularSent)) / 1_048_576
+        let wifiMB = Double(safeDelta(current.wifiReceived + current.wifiSent,
+                                      baseline.wifiReceived + baseline.wifiSent)) / 1_048_576
+        let cellMB = Double(safeDelta(current.cellularReceived + current.cellularSent,
+                                      baseline.cellularReceived + baseline.cellularSent)) / 1_048_576
         return (wifiMB: max(0, wifiMB), cellularMB: max(0, cellMB))
     }
 
@@ -148,8 +206,14 @@ class DataUsageStore: ObservableObject {
             guard let dayStart = cal.date(byAdding: .day, value: dayOffset, to: cal.startOfDay(for: now)),
                   let dayEnd   = cal.date(byAdding: .day, value: 1, to: dayStart) else { continue }
 
-            var daySnaps = snapshots.filter { $0.timestamp >= dayStart && $0.timestamp < dayEnd }
-            if dayOffset == 0 { daySnaps.append(liveSnapshot) }
+            if dayOffset == 0 {
+                // Always use midnight baseline for today so the number is accurate from 12:00 AM
+                let t = todayUsage()
+                result.append(DailyUsage(date: dayStart, wifiMB: t.wifiMB, cellularMB: t.cellularMB))
+                continue
+            }
+
+            let daySnaps = snapshots.filter { $0.timestamp >= dayStart && $0.timestamp < dayEnd }
 
             if daySnaps.count >= 2 {
                 let first  = daySnaps.first!
@@ -161,9 +225,6 @@ class DataUsageStore: ObservableObject {
                 result.append(DailyUsage(date: dayStart,
                                          wifiMB: max(0, wifiMB),
                                          cellularMB: max(0, cellMB)))
-            } else if dayOffset == 0 {
-                let t = todayUsage()
-                result.append(DailyUsage(date: dayStart, wifiMB: t.wifiMB, cellularMB: t.cellularMB))
             } else {
                 result.append(DailyUsage(date: dayStart, wifiMB: 0, cellularMB: 0))
             }

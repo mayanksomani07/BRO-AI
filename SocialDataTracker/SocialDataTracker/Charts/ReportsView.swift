@@ -5,7 +5,7 @@ struct ReportsView: View {
     @EnvironmentObject var dataUsageStore: DataUsageStore
     @EnvironmentObject var selfReportStore: SelfReportStore
     @EnvironmentObject var appDetector: AppDetector
-    @State private var selectedDays = 30
+    @State private var selectedDays = 1
 
     private var dailyData: [DailyUsage] { dataUsageStore.dailyDeltas(days: selectedDays) }
     private var allEntries: [SelfReportEntry] { selfReportStore.allEntries(days: selectedDays) }
@@ -13,6 +13,10 @@ struct ReportsView: View {
     private var peakDay: DailyUsage? { dailyData.max(by: { $0.totalMB < $1.totalMB }) }
     private var totalWifi: Double { dailyData.reduce(0) { $0 + $1.wifiMB } }
     private var totalCellular: Double { dailyData.reduce(0) { $0 + $1.cellularMB } }
+
+    // Days that have at least some recorded data
+    private var daysWithData: Int { dailyData.filter { $0.totalMB > 0.01 }.count }
+    private var isDataSparse: Bool { daysWithData < max(1, selectedDays / 2) }
 
     private var perAppSummary: [(app: SocialApp, minutes: Int, mb: Double)] {
         appDetector.installedApps.map { app in
@@ -27,6 +31,10 @@ struct ReportsView: View {
             ScrollView {
                 VStack(spacing: 20) {
                     rangePicker
+
+                    if isDataSparse {
+                        sparseDataBanner
+                    }
 
                     statsGrid
 
@@ -46,34 +54,73 @@ struct ReportsView: View {
         }
     }
 
+    private var sparseDataBanner: some View {
+        HStack(spacing: 12) {
+            Image(systemName: "clock.badge.fill")
+                .foregroundColor(.orange)
+                .font(.title3)
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Data is still building up")
+                    .font(.subheadline).bold()
+                Text("Stats show \(daysWithData) day\(daysWithData == 1 ? "" : "s") of data so far. Keep the app open daily for full history.")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+            }
+            Spacer()
+        }
+        .padding(14)
+        .background(Color.orange.opacity(0.1))
+        .clipShape(RoundedRectangle(cornerRadius: 14))
+        .overlay(RoundedRectangle(cornerRadius: 14).stroke(Color.orange.opacity(0.3), lineWidth: 1))
+    }
+
     private var rangePicker: some View {
         Picker("Range", selection: $selectedDays) {
+            Text("Today").tag(1)
             Text("7 Days").tag(7)
             Text("30 Days").tag(30)
-            Text("90 Days").tag(90)
         }
         .pickerStyle(.segmented)
     }
 
     private var statsGrid: some View {
-        LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
-            StatCard(title: "Total Usage", value: formatMB(totalWifi + totalCellular),
+        let rangeLabel = selectedDays == 1 ? "Today" : "\(selectedDays) Days"
+
+        return LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
+            StatCard(title: "Total — \(rangeLabel)", value: formatMB(totalWifi + totalCellular),
                      icon: "chart.bar.fill", color: .purple)
-            StatCard(title: "WiFi", value: formatMB(totalWifi),
+            StatCard(title: "WiFi — \(rangeLabel)", value: formatMB(totalWifi),
                      icon: "wifi", color: .blue)
-            StatCard(title: "Cellular", value: formatMB(totalCellular),
+            StatCard(title: "Cellular — \(rangeLabel)", value: formatMB(totalCellular),
                      icon: "antenna.radiowaves.left.and.right", color: .orange)
-            if let peak = peakDay {
+            if selectedDays > 1, let peak = peakDay, peak.totalMB > 0.01 {
                 StatCard(title: "Peak Day", value: "\(peak.dayLabel) \(formatMB(peak.totalMB))",
                          icon: "bolt.fill", color: .red)
+            }
+            if selectedDays > 1 {
+                StatCard(title: "Days Tracked", value: "\(daysWithData) / \(selectedDays)",
+                         icon: "calendar", color: .teal)
             }
         }
     }
 
     private var timelineCard: some View {
-        ChartCard(title: "Usage Timeline", subtitle: "\(selectedDays)-day overview") {
+        let subtitle = selectedDays == 1 ? "Today — updates every 3 seconds" : "\(selectedDays)-day overview"
+        return ChartCard(title: "Usage Timeline", subtitle: subtitle) {
+            if daysWithData == 0 {
+                VStack(spacing: 10) {
+                    Image(systemName: "chart.line.uptrend.xyaxis")
+                        .font(.system(size: 36)).foregroundColor(.secondary)
+                    Text("No data yet for this range")
+                        .font(.subheadline).bold().foregroundColor(.secondary)
+                    Text("Keep the app open and data will appear here automatically.")
+                        .font(.caption).foregroundColor(.secondary)
+                        .multilineTextAlignment(.center).padding(.horizontal)
+                }
+                .frame(height: 180).frame(maxWidth: .infinity)
+            } else {
             Chart {
-                ForEach(dailyData) { day in
+                ForEach(dailyData.filter { $0.totalMB > 0 }) { day in
                     AreaMark(
                         x: .value("Date", day.date, unit: .day),
                         yStart: .value("", 0),
@@ -131,6 +178,7 @@ struct ReportsView: View {
                 legendDot(color: .orange, label: "Cellular")
             }
             .padding(.top, 4)
+            } // end else
         }
     }
 
