@@ -4,25 +4,53 @@
 <dict>
 	<key>LSApplicationQueriesSchemes</key>
 	<array>
+		<!-- WhatsApp -->
 		<string>whatsapp</string>
+		<!-- Instagram -->
 		<string>instagram</string>
+		<!-- Telegram -->
 		<string>tg</string>
+		<!-- Facebook -->
 		<string>fb</string>
+		<string>fbauth2</string>
+		<!-- X / Twitter — both old and new scheme -->
 		<string>twitter</string>
+		<string>x-twitter</string>
+		<!-- Snapchat -->
 		<string>snapchat</string>
+		<!-- TikTok — multiple known bundle schemes -->
 		<string>snssdk1233</string>
+		<string>snssdk1180</string>
+		<string>musical.ly</string>
+		<!-- YouTube -->
 		<string>youtube</string>
+		<string>vnd.youtube</string>
+		<string>googleyoutube</string>
+		<!-- LinkedIn -->
 		<string>linkedin</string>
+		<!-- Reddit -->
 		<string>reddit</string>
+		<string>apollo</string>
+		<!-- Pinterest -->
 		<string>pinterest</string>
+		<!-- Discord -->
 		<string>discord</string>
+		<!-- Threads (Meta) -->
 		<string>barcelona</string>
+		<!-- BeReal -->
 		<string>bereal</string>
-		<string>tumblr</string>
+		<!-- Signal -->
 		<string>sgnl</string>
+		<!-- Viber -->
 		<string>viber</string>
+		<!-- WeChat -->
 		<string>weixin</string>
+		<string>wechat</string>
+		<!-- Tumblr -->
+		<string>tumblr</string>
+		<!-- Clubhouse -->
 		<string>clubhouse</string>
+		<!-- Mastodon -->
 		<string>mastodon</string>
 	</array>
 	<key>BGTaskSchedulerPermittedIdentifiers</key>

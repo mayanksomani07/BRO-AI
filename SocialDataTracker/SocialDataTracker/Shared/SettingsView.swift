@@ -4,6 +4,7 @@ struct SettingsView: View {
     @AppStorage("hasCompletedOnboarding") private var hasCompletedOnboarding = true
     @AppStorage("backgroundRefreshEnabled") private var backgroundRefreshEnabled = true
     @State private var showDisclaimer = false
+    @State private var showDebug = false
 
     var body: some View {
         NavigationView {
@@ -11,6 +12,9 @@ struct SettingsView: View {
                 Section("App") {
                     Toggle("Background Refresh", isOn: $backgroundRefreshEnabled)
                     Button("View Disclaimer") { showDisclaimer = true }
+                    NavigationLink("Debug App Detection") {
+                        DebugDetectionView()
+                    }
                 }
 
                 Section("About") {
