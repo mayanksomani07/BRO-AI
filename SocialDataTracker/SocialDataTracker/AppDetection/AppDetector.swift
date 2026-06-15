@@ -7,18 +7,26 @@ class AppDetector: ObservableObject {
     @Published var isRefreshing = false
 
     private let cacheKey = "cached_social_apps_v3"
+    private var refreshTimer: Timer?
 
     init() {
         loadFromCache()
-        // Always probe on init — don't rely on cache for isInstalled
         refresh()
+        // Re-probe every 30s so the list stays live without user action
+        refreshTimer = Timer.scheduledTimer(withTimeInterval: 30, repeats: true) { [weak self] _ in
+            self?.refresh()
+        }
+    }
+
+    deinit {
+        refreshTimer?.invalidate()
     }
 
     func refresh() {
         guard !isRefreshing else { return }
         isRefreshing = true
 
-        // Must run on main thread — UIApplication.shared requires it
+        // canOpenURL must run on main thread
         DispatchQueue.main.async { [weak self] in
             guard let self else { return }
 
@@ -36,17 +44,20 @@ class AppDetector: ObservableObject {
         }
     }
 
-    // Try every known scheme for an app — returns true if any one works
+    // Try every known scheme for an app — canOpenURL needs just "scheme://"
     private func probeInstalled(_ app: SocialApp) -> Bool {
         for scheme in app.allSchemes {
-            // canOpenURL needs a valid URL — append path if bare scheme
-            let urlString = scheme.hasSuffix("://") ? scheme + "app" : scheme
-            guard let url = URL(string: urlString) else { continue }
+            // Normalise: strip trailing slashes, then re-add "://"
+            let base = scheme
+                .replacingOccurrences(of: "://", with: "")
+                .components(separatedBy: "/").first ?? scheme
+            guard let url = URL(string: "\(base)://") else { continue }
             if UIApplication.shared.canOpenURL(url) {
-                print("[AppDetector] ✅ \(app.displayName) detected via \(scheme)")
+                print("[AppDetector] ✅ \(app.displayName) detected via \(base)://")
                 return true
             }
         }
+        print("[AppDetector] ❌ \(app.displayName) not found")
         return false
     }
 

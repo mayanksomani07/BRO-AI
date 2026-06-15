@@ -15,11 +15,15 @@ struct AppsView: View {
     @EnvironmentObject var appDetector: AppDetector
     @EnvironmentObject var selfReportStore: SelfReportStore
     @EnvironmentObject var dataUsageStore: DataUsageStore
+    @EnvironmentObject var screenTime: ScreenTimeManager
 
     @State private var selectedApp: SocialApp?
     @State private var showAll = false
     @State private var chartMode: ChartMode = .bar
     @State private var selectedItem: AppUsageItem?
+    @State private var showingScreenTimeSheet = false
+    @State private var refreshTick = 0
+    private let refreshTimer = Timer.publish(every: 3, on: .main, in: .common).autoconnect()
 
     enum ChartMode: String, CaseIterable {
         case bar = "Bar"
@@ -27,17 +31,29 @@ struct AppsView: View {
         case timeline = "Timeline"
     }
 
-    // Recomputes every time liveSnapshot or selfReportStore changes — fully real-time
+    // Recomputes every 3s via refreshTick, and whenever store/detector changes
     private var appItems: [AppUsageItem] {
+        _ = refreshTick
         let today = dataUsageStore.todayUsage()
         let totalMB = today.wifiMB + today.cellularMB
-        let apps = showAll ? appDetector.detectedApps : appDetector.installedApps
+        // Fall back to all known apps when none detected, so charts always populate
+        let installed = appDetector.installedApps
+        let apps: [SocialApp]
+        if showAll || installed.isEmpty {
+            apps = appDetector.detectedApps.isEmpty ? SocialApp.allKnown : appDetector.detectedApps
+        } else {
+            apps = installed
+        }
         guard !apps.isEmpty else { return [] }
 
-        // Step 1: Get self-reported estimates for each app
+        // Step 1: Get minutes for each app — REAL Screen Time data if available,
+        //         otherwise fall back to self-reported logs.
         let reported: [(SocialApp, Double, Int)] = apps.map { app in
-            let mins = selfReportStore.totalMinutes(for: app.id, days: 1)
-            let mb   = selfReportStore.estimatedMB(for: app.id, days: 1)
+            let stMins = screenTime.minutesUsed(forBundleID: app.id)
+            let mins   = stMins > 0 ? stMins : selfReportStore.totalMinutes(for: app.id, days: 1)
+            let mb     = stMins > 0
+                         ? Double(stMins) * 1.5  // rough MB estimate when only minutes are known
+                         : selfReportStore.estimatedMB(for: app.id, days: 1)
             return (app, mb, mins)
         }
         let totalReported = reported.reduce(0.0) { $0 + $1.1 }
@@ -61,7 +77,6 @@ struct AppsView: View {
                 loggedMinutes: mins
             )
         }
-        .filter { showAll || $0.app.isInstalled }
         .sorted { $0.totalMB > $1.totalMB }
     }
 
@@ -83,6 +98,9 @@ struct AppsView: View {
         NavigationView {
             ScrollView {
                 VStack(spacing: 18) {
+                    // Screen Time access banner (only shown when not yet approved)
+                    screenTimeBanner
+
                     // Hero live summary
                     liveAppsSummaryHero
 
@@ -98,9 +116,15 @@ struct AppsView: View {
 
                     // Separator
                     HStack {
-                        Text(showAll ? "All Apps (\(appDetector.detectedApps.count))"
-                                     : "Installed (\(appDetector.installedApps.count))")
-                            .font(.headline)
+                        if appDetector.installedApps.isEmpty {
+                            Text("All Apps (\(SocialApp.allKnown.count)) — none detected yet")
+                                .font(.headline)
+                        } else {
+                            Text(showAll
+                                 ? "All Apps (\(appDetector.detectedApps.count))"
+                                 : "Installed (\(appDetector.installedApps.count))")
+                                .font(.headline)
+                        }
                         Spacer()
                         Toggle("", isOn: $showAll)
                             .labelsHidden()
@@ -116,6 +140,10 @@ struct AppsView: View {
             .background(Color(.systemGroupedBackground))
             .navigationTitle("Social Apps")
             .navigationBarTitleDisplayMode(.large)
+            .onReceive(refreshTimer) { _ in
+                dataUsageStore.record()
+                refreshTick += 1
+            }
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button { appDetector.refresh() } label: {
@@ -132,6 +160,43 @@ struct AppsView: View {
                     .environmentObject(selfReportStore)
                     .environmentObject(dataUsageStore)
             }
+            .sheet(isPresented: $showingScreenTimeSheet) {
+                ScreenTimePickerView()
+                    .environmentObject(screenTime)
+            }
+        }
+    }
+
+    // MARK: - Screen Time access banner
+
+    @ViewBuilder
+    private var screenTimeBanner: some View {
+        if screenTime.authState != .approved {
+            Button { showingScreenTimeSheet = true } label: {
+                HStack(spacing: 12) {
+                    Image(systemName: "lock.shield.fill")
+                        .font(.title2)
+                        .foregroundColor(.white)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Get REAL per-app usage data")
+                            .font(.subheadline).bold()
+                            .foregroundColor(.white)
+                        Text("Tap to grant Screen Time access")
+                            .font(.caption)
+                            .foregroundColor(.white.opacity(0.85))
+                    }
+                    Spacer()
+                    Image(systemName: "chevron.right")
+                        .foregroundColor(.white.opacity(0.8))
+                }
+                .padding(14)
+                .background(
+                    LinearGradient(colors: [.orange, .pink],
+                                   startPoint: .leading, endPoint: .trailing)
+                )
+                .clipShape(RoundedRectangle(cornerRadius: 14))
+            }
+            .buttonStyle(.plain)
         }
     }
 
@@ -165,7 +230,9 @@ struct AppsView: View {
                     Spacer()
                     VStack(alignment: .trailing, spacing: 6) {
                         LiveBadge(kbps: kbps)
-                        Text("\(appDetector.installedApps.count) apps detected")
+                        Text(appDetector.installedApps.isEmpty
+                             ? "\(SocialApp.allKnown.count) apps tracked"
+                             : "\(appDetector.installedApps.count) installed")
                             .font(.caption2)
                             .foregroundColor(.white.opacity(0.7))
                     }
@@ -469,11 +536,21 @@ struct AppsView: View {
                 .font(.system(size: 40)).foregroundColor(.secondary)
             Text("No installed apps detected yet")
                 .font(.subheadline).bold().foregroundColor(.secondary)
-            Text("Tap ↻ in the top-right to scan for installed social apps on your device.")
+            Text("Tap ↻ to re-scan. If apps you have installed still show 'Not found', toggle 'Show all' below to see them anyway.")
                 .font(.caption).foregroundColor(.secondary)
                 .multilineTextAlignment(.center).padding(.horizontal)
+            Button {
+                appDetector.refresh()
+            } label: {
+                Label("Scan Now", systemImage: "arrow.clockwise")
+                    .font(.subheadline).bold()
+                    .padding(.horizontal, 20).padding(.vertical, 8)
+                    .background(Color.purple.opacity(0.15))
+                    .foregroundColor(.purple)
+                    .clipShape(Capsule())
+            }
         }
-        .frame(height: 160).frame(maxWidth: .infinity)
+        .frame(height: 200).frame(maxWidth: .infinity)
     }
 
     private func legendDot(color: Color, label: String) -> some View {

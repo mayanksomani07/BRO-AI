@@ -50,11 +50,11 @@ struct SocialApp: Codable, Identifiable, Hashable {
                   fallbackSchemes: ["fbauth2://", "fb://profile"],
                   category: .social, isInstalled: false),
 
-        // X / Twitter — tries both old and new scheme
+        // X / Twitter — x-twitter is the current registered scheme since rebrand
         SocialApp(id: "twitter",    displayName: "X (Twitter)",
                   sfSymbol: "bubble.left.and.bubble.right.fill",
-                  scheme: "twitter://",
-                  fallbackSchemes: ["x-twitter://"],
+                  scheme: "x-twitter://",
+                  fallbackSchemes: ["twitter://"],
                   category: .social, isInstalled: false),
 
         // Snapchat

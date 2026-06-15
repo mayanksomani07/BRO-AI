@@ -5,10 +5,27 @@ struct SettingsView: View {
     @AppStorage("backgroundRefreshEnabled") private var backgroundRefreshEnabled = true
     @State private var showDisclaimer = false
     @State private var showDebug = false
+    @State private var showScreenTime = false
+    @EnvironmentObject var screenTime: ScreenTimeManager
 
     var body: some View {
         NavigationView {
             Form {
+                Section("Screen Time (REAL per-app data)") {
+                    Button {
+                        showScreenTime = true
+                    } label: {
+                        HStack {
+                            Label("Manage Screen Time Access",
+                                  systemImage: "lock.shield.fill")
+                            Spacer()
+                            Text(screenTime.authState == .approved ? "On" : "Off")
+                                .foregroundColor(screenTime.authState == .approved ? .green : .orange)
+                                .font(.caption).bold()
+                        }
+                    }
+                }
+
                 Section("App") {
                     Toggle("Background Refresh", isOn: $backgroundRefreshEnabled)
                     Button("View Disclaimer") { showDisclaimer = true }
@@ -40,6 +57,10 @@ struct SettingsView: View {
             .navigationTitle("Settings")
             .sheet(isPresented: $showDisclaimer) {
                 SandboxDisclaimerSheet()
+            }
+            .sheet(isPresented: $showScreenTime) {
+                ScreenTimePickerView()
+                    .environmentObject(screenTime)
             }
         }
     }
